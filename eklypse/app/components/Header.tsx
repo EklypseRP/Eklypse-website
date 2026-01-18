@@ -25,6 +25,18 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleNavigation = (page: 'home' | 'lore') => {
     onNavigate(page);
@@ -42,18 +54,25 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
       backdropFilter: 'blur(12px)',
       borderBottom: '1px solid rgba(104, 56, 146, 0.3)'
     }}>
-      <nav style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem' }}>
+      <nav style={{ maxWidth: '1200px', margin: '0 auto', padding: '0.5rem 1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => handleNavigation('home')}>
             <img 
               src="/Eklypse.png" 
               alt="Eklypse Logo" 
-              style={{ width: '48px', height: '48px', objectFit: 'contain' }}
+              style={{ width: '100px', height: '100px', objectFit: 'contain' }}
             />
           </div>
 
           {/* Desktop Navigation */}
-          <div style={{ display: 'none', gap: '2rem', alignItems: 'center' }} className="md:flex">
+          <div style={{ 
+            display: isMobile ? 'none' : 'flex', 
+            gap: '2.5rem', 
+            alignItems: 'center',
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)'
+          }}>
             <button
               onClick={() => handleNavigation('home')}
               style={{
@@ -61,7 +80,8 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                 border: 'none',
                 color: currentPage === 'home' ? '#683892' : '#CBDBFC',
                 cursor: 'pointer',
-                fontSize: '1rem',
+                fontSize: '1.125rem',
+                fontWeight: '500',
                 transition: 'color 0.3s'
               }}
               onMouseOver={(e) => (e.currentTarget.style.color = '#683892')}
@@ -76,7 +96,8 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                 border: 'none',
                 color: currentPage === 'lore' ? '#683892' : '#CBDBFC',
                 cursor: 'pointer',
-                fontSize: '1rem',
+                fontSize: '1.125rem',
+                fontWeight: '500',
                 transition: 'color 0.3s'
               }}
               onMouseOver={(e) => (e.currentTarget.style.color = '#683892')}
@@ -87,22 +108,23 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#CBDBFC',
-              cursor: 'pointer'
-            }}
-            className="md:hidden"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X style={{ width: '24px', height: '24px' }} /> : <Menu style={{ width: '24px', height: '24px' }} />}
-          </button>
+          {isMobile && (
+            <button
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#CBDBFC',
+                cursor: 'pointer'
+              }}
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X style={{ width: '24px', height: '24px' }} /> : <Menu style={{ width: '24px', height: '24px' }} />}
+            </button>
+          )}
         </div>
 
         {/* Mobile Navigation */}
-        {isMenuOpen && (
+        {isMenuOpen && isMobile && (
           <div style={{ marginTop: '1rem', paddingBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <button
               onClick={() => handleNavigation('home')}
