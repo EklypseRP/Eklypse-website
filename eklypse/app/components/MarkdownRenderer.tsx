@@ -1,69 +1,52 @@
-'use client';
-
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-interface MarkdownRendererProps {
-  content: string;
-}
-
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
-  const parseMarkdown = (text: string): string => {
-    let html = text;
-
-    // Headers
-    html = html.replace(/^### (.*$)/gim, '<h3 class="md-h3">$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2 class="md-h2">$1</h2>');
-    html = html.replace(/^# (.*$)/gim, '<h1 class="md-h1">$1</h1>');
-
-    // Bold
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-    // Italic
-    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-
-    // Links
-    html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="md-link">$1</a>');
-
-    // Lists (unordered)
-    html = html.replace(/^\- (.*$)/gim, '<li class="md-li">$1</li>');
-    // Remplacer toutes les balises <li> consécutives par une liste
-    html = html.replace(/(<li class="md-li">[\s\S]*?<\/li>)(?=\n(?!<li)|\n*$)/g, '<ul class="md-ul">$1</ul>');
-
-    // Lists (ordered)
-    html = html.replace(/^\d+\. (.*$)/gim, '<li class="md-li-ordered">$1</li>');
-    html = html.replace(/(<li class="md-li-ordered">[\s\S]*?<\/li>)(?=\n(?!<li)|\n*$)/g, '<ol class="md-ol">$1</ol>');
-
-    // Blockquotes
-    html = html.replace(/^> (.*$)/gim, '<blockquote class="md-blockquote">$1</blockquote>');
-
-    // Paragraphs
-    html = html.replace(/\n\n/g, '</p><p class="md-p">');
-    html = '<p class="md-p">' + html + '</p>';
-
-    // Clean up empty paragraphs
-    html = html.replace(/<p class="md-p"><\/p>/g, '');
-    html = html.replace(/<p class="md-p">(<h[1-3])/g, '$1');
-    html = html.replace(/(<\/h[1-3]>)<\/p>/g, '$1');
-    html = html.replace(/<p class="md-p">(<ul)/g, '$1');
-    html = html.replace(/(<\/ul>)<\/p>/g, '$1');
-    html = html.replace(/<p class="md-p">(<ol)/g, '$1');
-    html = html.replace(/(<\/ol>)<\/p>/g, '$1');
-    html = html.replace(/<p class="md-p">(<blockquote)/g, '$1');
-    html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
-
-    return html;
-  };
-
-  return (
-    <div 
-      className="markdown-content"
-      dangerouslySetInnerHTML={{ __html: parseMarkdown(content) }}
-      style={{
-        color: 'rgba(203, 219, 252, 0.9)',
-        lineHeight: '1.75'
-      }}
-    />
-  );
+const COLORS = {
+  purple: '#683892',
+  lightText: '#CBDBFC',
 };
 
-export default MarkdownRenderer;
+export default function MarkdownRenderer({ content }: { content: string }) {
+  return (
+    <div className="markdown-container" style={{
+      lineHeight: '1.8',
+      fontSize: '1.1rem',
+      color: 'rgba(203, 219, 252, 0.9)',
+    }}>
+      <ReactMarkdown 
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // On personnalise chaque balise HTML pour qu'elle corresponde au design
+          h1: ({node, ...props}) => <h1 style={{ color: COLORS.lightText, fontSize: '2.5rem', marginBottom: '1.5rem', borderBottom: `1px solid ${COLORS.purple}`, paddingBottom: '0.5rem' }} {...props} />,
+          h2: ({node, ...props}) => <h2 style={{ color: COLORS.lightText, fontSize: '1.8rem', marginTop: '2rem', marginBottom: '1rem' }} {...props} />,
+          h3: ({node, ...props}) => <h3 style={{ color: COLORS.purple, fontSize: '1.4rem', marginTop: '1.5rem' }} {...props} />,
+          p: ({node, ...props}) => <p style={{ marginBottom: '1.2rem' }} {...props} />,
+          strong: ({node, ...props}) => <strong style={{ color: COLORS.purple, fontWeight: 'bold' }} {...props} />,
+          ul: ({node, ...props}) => <ul style={{ marginBottom: '1.2rem', paddingLeft: '1.5rem', listStyleType: 'square' }} {...props} />,
+          li: ({node, ...props}) => <li style={{ marginBottom: '0.5rem' }} {...props} />,
+          code: ({node, ...props}) => (
+            <code style={{ 
+              backgroundColor: 'rgba(104, 56, 146, 0.2)', 
+              padding: '0.2rem 0.4rem', 
+              borderRadius: '4px',
+              fontFamily: 'monospace',
+              color: COLORS.purple
+            }} {...props} />
+          ),
+          blockquote: ({node, ...props}) => (
+            <blockquote style={{ 
+              borderLeft: `4px solid ${COLORS.purple}`, 
+              paddingLeft: '1rem', 
+              fontStyle: 'italic', 
+              margin: '1.5rem 0',
+              color: 'rgba(203, 219, 252, 0.7)'
+            }} {...props} />
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+}
