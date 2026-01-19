@@ -166,13 +166,14 @@ const StoryPreview: React.FC = () => (
         <h3 style={{ fontSize: 'clamp(1.5rem, 3vw, 1.875rem)', fontWeight: 'bold' }}>La Légende Commence</h3>
       </div>
       <p style={{ color: `rgba(203, 219, 252, 0.9)`, lineHeight: '1.75', marginBottom: '1rem' }}>
-        Il y a trois cents ans, à la fin d'une guerre dévastatrice, le Roi Démon, mortellement blessé, 
-        lança son ultime sort. Dans un dernier acte de malveillance, il enferma la capitale du seul 
-        continent peuplé dans un donjon colossal, isolant l'humanité du reste du monde.
+        Il y a trois cents ans, au terme d'une guerre dévastatrice, le Roi Démon, au bord de la défaite, lança son ultime malédiction. 
+        Dans un dernier acte de haine, il scella la capitale du seul continent peuplé au cœur d'un donjon colossal, coupant l'humanité du reste du monde.
+        Ce sortilège consuma l'entièreté de son mana, le plongeant dans une profonde léthargie au cœur des abysses, où il attend patiemment de recouvrer ses forces.
+        Simple mythe ou terrible réalité ? Une rumeur enfle : chaque jour qui passe, la menace du Démon grandit et sa puissance ne fait que croitre.
       </p>
       <p style={{ color: `rgba(203, 219, 252, 0.9)`, lineHeight: '1.75', marginBottom: '1.5rem' }}>
-        Ce sort consuma toute son énergie, le plongeant dans un sommeil éternel dans les profondeurs de 
-        l'abysse...
+        Dans ce monde en sursis, qui choisirez-vous d'être ? Du marchand astucieux au guerrier légendaire, votre destin vous appartient.
+        Entrez dans la légende... avant qu'elle ne s'éteigne.
       </p>
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         {/* Le bouton utilise maintenant Link pour aller vers /wiki */}
