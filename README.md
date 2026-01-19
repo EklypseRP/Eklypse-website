@@ -121,8 +121,7 @@ npm run build
 
 ## Liens Externes
 
-* **Discord de la communauté** : [Lien]
-* **IP du serveur** : play.eklypse-mc.fr
+* **Discord de la communauté** : [[Lien]](https://discord.gg/67H3ccmvvW)
 
 ---
 
