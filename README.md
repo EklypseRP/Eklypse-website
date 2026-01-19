@@ -1,6 +1,6 @@
-# Eklypse | Site Vitrine
+# Eklypse | Site Vitrine et Wiki Dynamique
 
-Ce dépôt contient le code source du site vitrine d'Eklypse, un serveur Minecraft MMORPG. Le site a pour objectif de présenter l'univers du jeu, son histoire et de fournir les informations essentielles aux futurs joueurs.
+Ce repo contient le code source du site vitrine et du wiki d'Eklypse, un serveur Minecraft MMORPG. Le site présente l'univers du jeu, son histoire, et propose un wiki entièrement géré par fichiers Markdown pour une documentation évolutive. Il à été entièrement developpé par Capu0410.
 
 ---
 
@@ -12,53 +12,86 @@ Ce sort a consumé toute son énergie, le plongeant dans un sommeil éternel au 
 
 ---
 
-## Contenu du Site
+## Technologies Utilisées
 
-Le site est conçu comme une expérience immersive présentant :
-- Une introduction narrative au lore.
-- Les informations de connexion et les liens communautaires.
+- **Framework** : Next.js 15+ (App Router)
+- **Langage** : TypeScript
+- **Style** : Tailwind CSS
+- **Gestion Contenu** : Gray-matter (Parsing Markdown)
+- **Rendu Markdown** : React-markdown
 
 ---
 
-## Technologies Utilisées
+## Gestion du Wiki (Système Dynamique)
 
-- **Framework** : React
-- **Langage** : TypeScript
-- **Outil de build** : Vite (ou Create React App)
-- **Style** : Tailwind CSS
+Le wiki est entièrement automatisé. Il scanne le répertoire `content/wiki/` pour générer les catégories et articles. Aucune modification de code n'est nécessaire pour ajouter du contenu.
+
+### Structure des Fichiers
+- **Dossier** = Une Catégorie (ex: `histoire`).
+- **Fichier .md** = Un Article (ex: `le-roi-demon.md`).
+
+```text
+content/
+└── wiki/
+    ├── histoire/                <-- Catégorie "Histoire"
+    │   ├── origines.md          <-- Article "Les Origines"
+    │   └── ere-des-demons.md
+    └── geographie/              <-- Nouvelle catégorie créée automatiquement
+        └── les-montagnes.md
+
+
+### Créer un Article
+
+Chaque fichier `.md` doit commencer par un bloc de métadonnées (Frontmatter) :
+
+---
+title: "Le Roi Démon"        # Titre de l'article
+icon: "symbole"             # Icône ou émoji de la petite carte (liste)
+categoryIcon: "symbole"     # Icône ou émoji de la grosse carte (accueil wiki)
+lastUpdated: "2026-01-19"   # Date de mise à jour
+---
+
+# Titre de l'article
+Votre contenu en Markdown ici...
+
+```
+
+*Note : La propriété categoryIcon peut être définie dans n'importe quel article d'un dossier pour s'appliquer à la catégorie entière.*
 
 ---
 
 ## Installation et Utilisation
 
 ### Prérequis
-- Node.js (version LTS recommandée)
-- Un gestionnaire de paquets (npm, yarn ou pnpm)
+
+* Node.js (version 18.x ou supérieure)
+* Un gestionnaire de paquets (npm, yarn ou pnpm)
 
 ### Procédure de lancement
 
-1. Cloner le projet :
+1. **Cloner le projet** :
 ```bash
 git clone [https://github.com/votre-pseudo/eklypse-site.git](https://github.com/votre-pseudo/eklypse-site.git)
 cd eklypse-site
 
 ```
 
-2. Installer les dépendances :
+
+2. **Installer les dépendances** :
 ```bash
 npm install
 
 ```
 
 
-3. Lancer le serveur de développement :
+3. **Lancer le serveur de développement** :
 ```bash
 npm run dev
 
 ```
 
 
-4. Builder pour la production :
+4. **Builder pour la production** :
 ```bash
 npm run build
 
@@ -70,13 +103,17 @@ npm run build
 
 ## Structure du Projet
 
-```text
-src/
-├── components/   # Composants React réutilisables
-├── assets/       # Images, vidéos et ressources statiques
-├── hooks/        # Hooks personnalisés
-├── styles/       # Fichiers de configuration CSS
-└── App.tsx       # Composant racine
+```
+.
+├── app/                # Routes et Layouts Next.js (App Router)
+│   ├── components/     # Composants React (Header, Footer, etc.)
+│   ├── wiki/           # Pages du système de Wiki
+│   └── globals.css     # Styles globaux
+├── content/
+│   └── wiki/           # Fichiers Markdown du Lore (Base de données)
+├── lib/                # Fonctions utilitaires (Lecteur de fichiers)
+├── public/             # Images et ressources statiques
+└── tailwind.config.ts  # Configuration Tailwind
 
 ```
 
@@ -84,11 +121,9 @@ src/
 
 ## Liens Externes
 
-* Discord de la communauté : [Lien]
-* IP du serveur : [IP du serveur]
+* **Discord de la communauté** : [Lien]
+* **IP du serveur** : play.eklypse-mc.fr
 
 ---
 
 © 2026 Eklypse Project. Tous droits réservés.
-
-```
