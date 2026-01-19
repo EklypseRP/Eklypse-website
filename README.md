@@ -1,4 +1,4 @@
-# Eklypse | Site Vitrine et Wiki Dynamique
+# Eklypse
 
 Ce repo contient le code source du site vitrine et du wiki d'Eklypse, un serveur Minecraft MMORPG. Le site présente l'univers du jeu, son histoire, et propose un wiki entièrement géré par fichiers Markdown pour une documentation évolutive. Il à été entièrement developpé par Capu0410.
 
