@@ -137,5 +137,3 @@ npm run build
 ---
 
 © 2026 Eklypse Project. Tous droits réservés.
-
-```
