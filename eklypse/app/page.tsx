@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link'; // Importé pour la navigation vers le wiki
+import Link from 'next/link';
 import Header from './components/Header';
 import Footer from './components/Footer';
 
@@ -27,26 +27,25 @@ const SCROLL_COLORS = {
 
 // ===== ICÔNES SVG =====
 const Icon = {
-  Sword: ({ style }: { style?: React.CSSProperties }) => (
+  PenTool: ({ style }: { style?: React.CSSProperties }) => (
     <svg style={style} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline>
-      <line x1="13" y1="19" x2="19" y2="13"></line>
-      <line x1="16" y1="16" x2="20" y2="20"></line>
-      <line x1="19" y1="21" x2="21" y2="19"></line>
+      <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+      <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+      <path d="M2 2l7.5 1.5"></path>
+      <path d="M7 11l5-5"></path>
+    </svg>
+  ),
+  Masks: ({ style }: { style?: React.CSSProperties }) => (
+    <svg style={style} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path>
+      <path d="M18 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path>
+      <path d="M12 20a8 8 0 0 0 8-8h-16a8 8 0 0 0 8 8Z"></path>
     </svg>
   ),
   BookOpen: ({ style }: { style?: React.CSSProperties }) => (
     <svg style={style} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
       <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-    </svg>
-  ),
-  Users: ({ style }: { style?: React.CSSProperties }) => (
-    <svg style={style} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-      <circle cx="9" cy="7" r="4"></circle>
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
     </svg>
   ),
   ChevronRight: ({ style }: { style?: React.CSSProperties }) => (
@@ -63,7 +62,6 @@ const Icon = {
 
 const useScrollProgress = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
-
   useEffect(() => {
     const handleScroll = () => {
       const windowHeight = window.innerHeight;
@@ -72,18 +70,15 @@ const useScrollProgress = () => {
       const progress = Math.min(scrolled / documentHeight, 1);
       setScrollProgress(progress);
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
   return scrollProgress;
 };
 
 const calculateBackgroundColor = (progress: number): string => {
   const { start, mid, end } = SCROLL_COLORS;
   let r, g, b;
-
   if (progress < 0.5) {
     const localProgress = progress * 2;
     r = Math.round(start.r + (mid.r - start.r) * localProgress);
@@ -95,13 +90,11 @@ const calculateBackgroundColor = (progress: number): string => {
     g = Math.round(mid.g + (end.g - mid.g) * localProgress);
     b = Math.round(mid.b + (end.b - mid.b) * localProgress);
   }
-
   return `rgb(${r}, ${g}, ${b})`;
 };
 
 export default function EklypseWebsite() {
   const scrollProgress = useScrollProgress();
-
   return (
     <div style={{
       minHeight: '100vh',
@@ -109,13 +102,10 @@ export default function EklypseWebsite() {
       color: COLORS.lightText,
       transition: 'background 0.3s ease'
     }}>
-      {/* Le Header ne prend plus de props de navigation */}
       <Header />
-      
       <main style={{ paddingTop: '6rem', paddingBottom: '4rem' }}>
         <HomePage />
       </main>
-
       <Footer />
     </div>
   );
@@ -172,11 +162,10 @@ const StoryPreview: React.FC = () => (
         Simple mythe ou terrible réalité ? Une rumeur enfle : chaque jour qui passe, la menace du Démon grandit et sa puissance ne fait que croitre.
       </p>
       <p style={{ color: `rgba(203, 219, 252, 0.9)`, lineHeight: '1.75', marginBottom: '1.5rem' }}>
-        Dans ce monde en sursis, qui choisirez-vous d'être ? Du marchand astucieux au guerrier légendaire, votre destin vous appartient.
+        Dans ce monde en sursis, qui choisirez-vous d'être ? Du marchand astucieux au guerrier légendaire, votre destin vous appartient.<br />
         Entrez dans la légende... avant qu'elle ne s'éteigne.
       </p>
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        {/* Le bouton utilise maintenant Link pour aller vers /wiki */}
         <Link href="/wiki" style={{ textDecoration: 'none' }}>
             <GradientButton>
                 Découvrir l'Histoire Complète
@@ -188,30 +177,32 @@ const StoryPreview: React.FC = () => (
   </section>
 );
 
+// ===== SECTION FONCTIONNALITÉS MISE À JOUR =====
 const FeaturesSection: React.FC = () => (
-  <section style={{ maxWidth: '72rem', margin: '0 auto 4rem' }}>
+  <section style={{ maxWidth: '1300px', margin: '0 auto 4rem' }}>
     <h3 style={{ fontSize: 'clamp(1.875rem, 4vw, 2.25rem)', fontWeight: 'bold', textAlign: 'center', marginBottom: '3rem' }}>
-      Fonctionnalités du Serveur
+      L'Expérience Eklypse
     </h3>
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-      gap: 'clamp(1.5rem, 3vw, 2rem)'
+      // Augmentation de la largeur minimale des colonnes à 320px pour plus de confort
+      gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+      gap: '2.5rem'
     }}>
       <FeatureCard
-        icon={<Icon.Sword style={{ width: '48px', height: '48px' }} />}
-        title="Donjons Épiques"
-        description="Naviguez à travers des niveaux difficiles remplis de monstres, de trésors et de mystères à découvrir."
-      />
-      <FeatureCard
-        icon={<Icon.Users style={{ width: '48px', height: '48px' }} />}
-        title="Jouez en Équipe"
-        description="Formez des guildes, créez des groupes et collaborez avec d'autres joueurs."
-      />
-      <FeatureCard
         icon={<Icon.BookOpen style={{ width: '48px', height: '48px' }} />}
-        title="Histoire Riche"
-        description="Plongez dans une histoire profonde et captivante."
+        title="Ressources & Guides"
+        description="Vous retrouverez sur le site une multitude de ressources et de guides pour vous aider à nous rejoindre dans les meilleures conditions, allant du guide de candidature à l'optimisation de votre jeu ! Vous pouvez aussi participer à sa rédaction si vous pensez qu'une ressource est pertinente."
+      />
+      <FeatureCard
+        icon={<Icon.Masks style={{ width: '48px', height: '48px' }} />}
+        title="Immersion & RP"
+        description="L'entièreté du lore disponible sur le Wiki est canoniquement accessible en jeu. Si vous souhaitez l'apprendre sur le bout des doigts et l'utiliser en RP, vous êtes dans votre droit. Libre à vous de nous rejoindre en connaissant chacune des dates et faits de notre univers !"
+      />
+      <FeatureCard
+        icon={<Icon.PenTool style={{ width: '48px', height: '48px' }} />}
+        title="Écrivez l'Histoire"
+        description="Mieux que de lire notre lore, devenez les personnes qui l'écrivent ! Grâce à vos actions, inspirez les futurs joueurs en rédigeant les prochaines pages de notre univers."
       />
     </div>
   </section>
@@ -230,9 +221,6 @@ const JoinSection: React.FC = () => (
         <Step number="4" text="Lancez Minecraft Java Edition et rejoignez Eklypse !" />
       </div>
       <div style={{ textAlign: 'center' }}>
-        <p style={{ color: `rgba(203, 219, 252, 0.7)`, marginBottom: '1rem', fontSize: '1.125rem' }}>
-          🔒 Serveur en Whitelist - Rejoignez notre Discord pour accéder
-        </p>
         <DiscordButton />
       </div>
     </Card>
@@ -273,21 +261,32 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) =
     <div
       style={{
         backgroundColor: COLORS.cardBg,
-        backdropFilter: 'blur(8px)',
-        borderRadius: '0.5rem',
-        padding: '1.5rem',
+        backdropFilter: 'blur(12px)',
+        borderRadius: '0.8rem',
+        // Augmentation du padding pour aérer le texte long
+        padding: '2.5rem', 
         border: `1px solid ${isHovered ? COLORS.purple : COLORS.cardBorder}`,
-        transition: 'all 0.3s',
-        boxShadow: isHovered ? '0 10px 15px -3px rgba(104, 56, 146, 0.2)' : 'none',
-        transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-        cursor: 'default'
+        transition: 'all 0.4s ease',
+        boxShadow: isHovered ? '0 15px 30px -5px rgba(104, 56, 146, 0.3)' : '0 10px 15px -3px rgba(0,0,0,0.2)',
+        transform: isHovered ? 'translateY(-10px)' : 'translateY(0)',
+        cursor: 'default',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column'
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div style={{ color: COLORS.purple, marginBottom: '1rem' }}>{icon}</div>
-      <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>{title}</h4>
-      <p style={{ color: `rgba(203, 219, 252, 0.8)`, lineHeight: '1.75' }}>{description}</p>
+      <div style={{ color: COLORS.purple, marginBottom: '1.5rem' }}>{icon}</div>
+      <h4 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem', color: COLORS.lightText }}>{title}</h4>
+      <p style={{ 
+        color: `rgba(203, 219, 252, 0.85)`, 
+        // Augmentation de l'interligne et de la taille pour la lisibilité
+        lineHeight: '1.8', 
+        fontSize: '1rem' 
+      }}>
+        {description}
+      </p>
     </div>
   );
 };
@@ -324,7 +323,6 @@ interface GradientButtonProps {
 
 const GradientButton: React.FC<GradientButtonProps> = ({ onClick, children }) => {
   const [isHovered, setIsHovered] = useState(false);
-
   return (
     <button
       onClick={onClick}
@@ -353,7 +351,6 @@ const GradientButton: React.FC<GradientButtonProps> = ({ onClick, children }) =>
 
 const DiscordButton: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
-
   return (
     <a
       href="https://discord.gg/67H3ccmvvW"
