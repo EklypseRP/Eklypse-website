@@ -17,7 +17,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
-      <BackButton href={`/wiki/${category}`} label="Retour à la liste" />
+      <BackButton href="/wiki" label="Retour à la liste" />
 
       <h2 style={{ fontSize: '2.2rem', fontWeight: 'bold', marginBottom: '2rem', color: '#CBDBFC' }}>
         {icon} {title}
