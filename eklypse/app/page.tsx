@@ -142,7 +142,7 @@ const HeroSection: React.FC = () => (
         marginBottom: '2rem',
         lineHeight: '1.75'
       }}>
-        Un Serveur Minecraft MMORPG Médiéval-Fantastique
+        Un Serveur Minecraft MMORPG Médiéval-Fantasy
       </p>
     </div>
   </section>
