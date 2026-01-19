@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link'; // Importé pour la navigation vers le wiki
 import Header from './components/Header';
 import Footer from './components/Footer';
-import LorePage from './components/LorePage';
 
 // ===== CONSTANTES =====
 const COLORS = {
@@ -20,9 +20,9 @@ const COLORS = {
 };
 
 const SCROLL_COLORS = {
-  start: { r: 28, g: 15, b: 38 },    // #160c1f
-  mid: { r: 20, g: 10, b: 28 },      // #0f0714
-  end: { r: 10, g: 6, b: 18 },       // #0A0612
+  start: { r: 28, g: 15, b: 38 },
+  mid: { r: 20, g: 10, b: 28 },
+  end: { r: 10, g: 6, b: 18 },
 };
 
 // ===== ICÔNES SVG =====
@@ -61,7 +61,6 @@ const Icon = {
   ),
 };
 
-// ===== HOOK PERSONNALISÉ POUR LE SCROLL =====
 const useScrollProgress = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -81,7 +80,6 @@ const useScrollProgress = () => {
   return scrollProgress;
 };
 
-// ===== FONCTION UTILITAIRE POUR LA COULEUR DE FOND =====
 const calculateBackgroundColor = (progress: number): string => {
   const { start, mid, end } = SCROLL_COLORS;
   let r, g, b;
@@ -101,15 +99,8 @@ const calculateBackgroundColor = (progress: number): string => {
   return `rgb(${r}, ${g}, ${b})`;
 };
 
-// ===== COMPOSANT PRINCIPAL =====
 export default function EklypseWebsite() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'lore'>('home');
   const scrollProgress = useScrollProgress();
-
-  const navigateTo = (page: 'home' | 'lore') => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   return (
     <div style={{
@@ -118,11 +109,11 @@ export default function EklypseWebsite() {
       color: COLORS.lightText,
       transition: 'background 0.3s ease'
     }}>
-      <Header currentPage={currentPage} onNavigate={navigateTo} />
+      {/* Le Header ne prend plus de props de navigation */}
+      <Header />
       
       <main style={{ paddingTop: '6rem', paddingBottom: '4rem' }}>
-        {currentPage === 'home' && <HomePage navigateTo={navigateTo} />}
-        {currentPage === 'lore' && <LorePage />}
+        <HomePage />
       </main>
 
       <Footer />
@@ -130,23 +121,17 @@ export default function EklypseWebsite() {
   );
 }
 
-// ===== PAGE D'ACCUEIL =====
-interface HomePageProps {
-  navigateTo: (page: 'home' | 'lore') => void;
-}
-
-const HomePage: React.FC<HomePageProps> = ({ navigateTo }) => {
+const HomePage: React.FC = () => {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
       <HeroSection />
-      <StoryPreview navigateTo={navigateTo} />
+      <StoryPreview />
       <FeaturesSection />
       <JoinSection />
     </div>
   );
 };
 
-// ===== SECTIONS DE LA PAGE D'ACCUEIL =====
 const HeroSection: React.FC = () => (
   <section style={{ textAlign: 'center', padding: '3rem 0' }}>
     <div style={{ maxWidth: '56rem', margin: '0 auto' }}>
@@ -173,7 +158,7 @@ const HeroSection: React.FC = () => (
   </section>
 );
 
-const StoryPreview: React.FC<HomePageProps> = ({ navigateTo }) => (
+const StoryPreview: React.FC = () => (
   <section style={{ maxWidth: '56rem', margin: '0 auto 4rem' }}>
     <Card>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
@@ -187,14 +172,16 @@ const StoryPreview: React.FC<HomePageProps> = ({ navigateTo }) => (
       </p>
       <p style={{ color: `rgba(203, 219, 252, 0.9)`, lineHeight: '1.75', marginBottom: '1.5rem' }}>
         Ce sort consuma toute son énergie, le plongeant dans un sommeil éternel dans les profondeurs de 
-        l'abysse, où il attend qu'un groupe d'élite vienne l'affronter une dernière fois. Pour se libérer, 
-        les gens doivent atteindre le niveau final du donjon pour libérer le Roi Démon et le vaincre une fois pour toutes.
+        l'abysse...
       </p>
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <GradientButton onClick={() => navigateTo('lore')}>
-          Découvrir l'Histoire Complète
-          <Icon.ChevronRight style={{ width: '20px', height: '20px', marginLeft: '0.5rem' }} />
-        </GradientButton>
+        {/* Le bouton utilise maintenant Link pour aller vers /wiki */}
+        <Link href="/wiki" style={{ textDecoration: 'none' }}>
+            <GradientButton>
+                Découvrir l'Histoire Complète
+                <Icon.ChevronRight style={{ width: '20px', height: '20px', marginLeft: '0.5rem' }} />
+            </GradientButton>
+        </Link>
       </div>
     </Card>
   </section>
@@ -218,12 +205,12 @@ const FeaturesSection: React.FC = () => (
       <FeatureCard
         icon={<Icon.Users style={{ width: '48px', height: '48px' }} />}
         title="Jouez en Équipe"
-        description="Formez des guildes, créez des groupes et collaborez avec d'autres joueurs pour conquérir les défis les plus difficiles."
+        description="Formez des guildes, créez des groupes et collaborez avec d'autres joueurs."
       />
       <FeatureCard
         icon={<Icon.BookOpen style={{ width: '48px', height: '48px' }} />}
         title="Histoire Riche"
-        description="Plongez dans une histoire profonde et captivante qui se dévoile au fur et à mesure de votre progression dans le monde."
+        description="Plongez dans une histoire profonde et captivante."
       />
     </div>
   </section>
@@ -246,14 +233,6 @@ const JoinSection: React.FC = () => (
           🔒 Serveur en Whitelist - Rejoignez notre Discord pour accéder
         </p>
         <DiscordButton />
-        <p style={{ 
-          color: `rgba(203, 219, 252, 0.6)`, 
-          marginTop: '1.5rem',
-          fontSize: '0.875rem',
-          fontStyle: 'italic'
-        }}>
-          Une fois vérifié sur Discord, vous recevrez toutes les informations nécessaires pour rejoindre le serveur
-        </p>
       </div>
     </Card>
   </section>
@@ -337,38 +316,8 @@ const Step: React.FC<StepProps> = ({ number, text }) => (
   </div>
 );
 
-interface LoreCardProps {
-  title: string;
-  content: string[];
-}
-
-const LoreCard: React.FC<LoreCardProps> = ({ title, content }) => (
-  <Card>
-    <h3 style={{
-      fontSize: 'clamp(1.5rem, 3vw, 1.875rem)',
-      fontWeight: 'bold',
-      marginBottom: '1rem',
-      color: COLORS.purple
-    }}>
-      {title}
-    </h3>
-    {content.map((paragraph, index) => (
-      <p
-        key={index}
-        style={{
-          color: `rgba(203, 219, 252, 0.9)`,
-          lineHeight: '1.75',
-          marginBottom: index < content.length - 1 ? '1rem' : '0'
-        }}
-      >
-        {paragraph}
-      </p>
-    ))}
-  </Card>
-);
-
 interface GradientButtonProps {
-  onClick: () => void;
+  onClick?: () => void;
   children: React.ReactNode;
 }
 
