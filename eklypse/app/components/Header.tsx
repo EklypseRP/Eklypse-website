@@ -44,7 +44,7 @@ const Header: React.FC = () => {
       backgroundColor: isScrolled ? 'rgba(10, 6, 18, 0.98)' : 'rgba(10, 6, 18, 0.4)', 
       backdropFilter: 'blur(12px)',
       // Bordure toujours visible mais plus marquée lors du scroll
-      borderBottom: `1px solid ${isScrolled ? COLORS.cardBorder : 'rgba(104, 56, 146, 0.1)'}`,
+      borderBottom: `0.5px solid ${isScrolled ? COLORS.cardBorder : 'rgba(104, 56, 146, 0.1)'}`,
       /* ----------------------------------------------------------- */
       
       transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',

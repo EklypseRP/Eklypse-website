@@ -113,7 +113,7 @@ export default function EklypseWebsite() {
 
 const HomePage: React.FC = () => {
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 1.5rem' }}>
       <HeroSection />
       <StoryPreview />
       <FeaturesSection />
@@ -124,7 +124,7 @@ const HomePage: React.FC = () => {
 
 const HeroSection: React.FC = () => (
   <section style={{ textAlign: 'center', padding: '3rem 0' }}>
-    <div style={{ maxWidth: '56rem', margin: '0 auto' }}>
+    <div style={{ maxWidth: '70rem', margin: '0 auto' }}>
       <h2 style={{
         fontSize: 'clamp(2.5rem, 5vw, 4.5rem)',
         fontWeight: 'bold',
@@ -149,19 +149,20 @@ const HeroSection: React.FC = () => (
 );
 
 const StoryPreview: React.FC = () => (
-  <section style={{ maxWidth: '56rem', margin: '0 auto 4rem' }}>
+  /* --- MODIFICATION : Section plus large (68rem) --- */
+  <section style={{ maxWidth: '68rem', margin: '0 auto 4rem' }}>
     <Card>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
-        <Icon.BookOpen style={{ width: '24px', height: '24px', color: COLORS.purple, marginRight: '0.75rem' }} />
-        <h3 style={{ fontSize: 'clamp(1.5rem, 3vw, 1.875rem)', fontWeight: 'bold' }}>La Légende Commence</h3>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginBottom: '1.5rem' }}>
+        <Icon.BookOpen style={{ width: '28px', height: '28px', color: COLORS.purple, marginRight: '1rem' }} />
+        <h3 style={{ fontSize: 'clamp(1.5rem, 3vw, 1.875rem)', fontWeight: 'bold', margin: 0 }}>La Légende Commence</h3>
       </div>
-      <p style={{ color: `rgba(203, 219, 252, 0.9)`, lineHeight: '1.75', marginBottom: '1rem' }}>
+      <p style={{ color: `rgba(203, 219, 252, 0.9)`, lineHeight: '1.8', marginBottom: '1rem', fontSize: '1.05rem' }}>
         Il y a trois cents ans, au terme d'une guerre dévastatrice, le Roi Démon, au bord de la défaite, lança son ultime malédiction. 
         Dans un dernier acte de haine, il scella la capitale du seul continent peuplé au cœur d'un donjon colossal, coupant l'humanité du reste du monde.
         Ce sortilège consuma l'entièreté de son mana, le plongeant dans une profonde léthargie au cœur des abysses, où il attend patiemment de recouvrer ses forces.
         Simple mythe ou terrible réalité ? Une rumeur enfle : chaque jour qui passe, la menace du Démon grandit et sa puissance ne fait que croitre.
       </p>
-      <p style={{ color: `rgba(203, 219, 252, 0.9)`, lineHeight: '1.75', marginBottom: '1.5rem' }}>
+      <p style={{ color: `rgba(203, 219, 252, 0.9)`, lineHeight: '1.8', marginBottom: '1.5rem', fontSize: '1.05rem' }}>
         Dans ce monde en sursis, qui choisirez-vous d'être ? Du marchand astucieux au guerrier légendaire, votre destin vous appartient.<br />
         Entrez dans la légende... avant qu'elle ne s'éteigne.
       </p>
@@ -177,30 +178,30 @@ const StoryPreview: React.FC = () => (
   </section>
 );
 
-// ===== SECTION FONCTIONNALITÉS MISE À JOUR =====
 const FeaturesSection: React.FC = () => (
-  <section style={{ maxWidth: '1300px', margin: '0 auto 4rem' }}>
+  /* --- MODIFICATION : Section élargie à 1400px --- */
+  <section style={{ maxWidth: '1400px', margin: '0 auto 4rem' }}>
     <h3 style={{ fontSize: 'clamp(1.875rem, 4vw, 2.25rem)', fontWeight: 'bold', textAlign: 'center', marginBottom: '3rem' }}>
       L'Expérience Eklypse
     </h3>
     <div style={{
       display: 'grid',
-      // Augmentation de la largeur minimale des colonnes à 320px pour plus de confort
-      gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+      // Augmentation de la largeur minimale des cartes à 400px pour les rendre plus larges
+      gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
       gap: '2.5rem'
     }}>
       <FeatureCard
-        icon={<Icon.BookOpen style={{ width: '48px', height: '48px' }} />}
+        icon={<Icon.BookOpen style={{ width: '32px', height: '32px' }} />}
         title="Ressources & Guides"
         description="Vous retrouverez sur le site une multitude de ressources et de guides pour vous aider à nous rejoindre dans les meilleures conditions, allant du guide de candidature à l'optimisation de votre jeu ! Vous pouvez aussi participer à sa rédaction si vous pensez qu'une ressource est pertinente."
       />
       <FeatureCard
-        icon={<Icon.Masks style={{ width: '48px', height: '48px' }} />}
+        icon={<Icon.Masks style={{ width: '32px', height: '32px' }} />}
         title="Immersion & RP"
         description="L'entièreté du lore disponible sur le Wiki est canoniquement accessible en jeu. Si vous souhaitez l'apprendre sur le bout des doigts et l'utiliser en RP, vous êtes dans votre droit. Libre à vous de nous rejoindre en connaissant chacune des dates et faits de notre univers !"
       />
       <FeatureCard
-        icon={<Icon.PenTool style={{ width: '48px', height: '48px' }} />}
+        icon={<Icon.PenTool style={{ width: '32px', height: '32px' }} />}
         title="Écrivez l'Histoire"
         description="Mieux que de lire notre lore, devenez les personnes qui l'écrivent ! Grâce à vos actions, inspirez les futurs joueurs en rédigeant les prochaines pages de notre univers."
       />
@@ -209,7 +210,8 @@ const FeaturesSection: React.FC = () => (
 );
 
 const JoinSection: React.FC = () => (
-  <section style={{ maxWidth: '56rem', margin: '0 auto' }}>
+  /* --- MODIFICATION : Section plus large (68rem) --- */
+  <section style={{ maxWidth: '68rem', margin: '0 auto' }}>
     <Card gradient>
       <h3 style={{ fontSize: 'clamp(1.5rem, 3vw, 1.875rem)', fontWeight: 'bold', marginBottom: '1.5rem', textAlign: 'center' }}>
         Prêt à Commencer Votre Aventure ?
@@ -240,7 +242,7 @@ const Card: React.FC<CardProps> = ({ children, gradient = false }) => (
       : COLORS.cardBg,
     backdropFilter: 'blur(8px)',
     borderRadius: '0.5rem',
-    padding: 'clamp(1.5rem, 3vw, 2.5rem)',
+    padding: 'clamp(1.5rem, 4vw, 3.5rem)', // Padding horizontal augmenté pour plus de largeur visuelle
     border: `1px solid ${gradient ? 'rgba(104, 56, 146, 0.5)' : COLORS.cardBorder}`,
     boxShadow: gradient ? '0 25px 50px -12px rgba(0, 0, 0, 0.25)' : '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
   }}>
@@ -263,8 +265,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) =
         backgroundColor: COLORS.cardBg,
         backdropFilter: 'blur(12px)',
         borderRadius: '0.8rem',
-        // Augmentation du padding pour aérer le texte long
-        padding: '2.5rem', 
+        padding: '3rem', // Augmentation du padding pour aérer
         border: `1px solid ${isHovered ? COLORS.purple : COLORS.cardBorder}`,
         transition: 'all 0.4s ease',
         boxShadow: isHovered ? '0 15px 30px -5px rgba(104, 56, 146, 0.3)' : '0 10px 15px -3px rgba(0,0,0,0.2)',
@@ -277,13 +278,30 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) =
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div style={{ color: COLORS.purple, marginBottom: '1.5rem' }}>{icon}</div>
-      <h4 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem', color: COLORS.lightText }}>{title}</h4>
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '1.25rem', 
+        marginBottom: '1.5rem' 
+      }}>
+        <div style={{ color: COLORS.purple, display: 'flex', alignItems: 'center' }}>
+          {icon}
+        </div>
+        <h4 style={{ 
+          fontSize: '1.6rem', 
+          fontWeight: 'bold', 
+          color: COLORS.lightText,
+          margin: 0 
+        }}>
+          {title}
+        </h4>
+      </div>
+      
       <p style={{ 
         color: `rgba(203, 219, 252, 0.85)`, 
-        // Augmentation de l'interligne et de la taille pour la lisibilité
         lineHeight: '1.8', 
-        fontSize: '1rem' 
+        fontSize: '1.05rem',
+        margin: 0
       }}>
         {description}
       </p>
@@ -312,7 +330,7 @@ const Step: React.FC<StepProps> = ({ number, text }) => (
     }}>
       {number}
     </div>
-    <p style={{ color: `rgba(203, 219, 252, 0.9)`, paddingTop: '0.5rem' }}>{text}</p>
+    <p style={{ color: `rgba(203, 219, 252, 0.9)`, paddingTop: '0.5rem', fontSize: '1.05rem' }}>{text}</p>
   </div>
 );
 
@@ -329,7 +347,7 @@ const GradientButton: React.FC<GradientButtonProps> = ({ onClick, children }) =>
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        padding: '0.75rem 1.5rem',
+        padding: '0.75rem 1.75rem',
         background: isHovered 
           ? `linear-gradient(to right, ${COLORS.darkPurple}, ${COLORS.purple})`
           : `linear-gradient(to right, ${COLORS.purple}, ${COLORS.darkPurple})`,
@@ -361,7 +379,7 @@ const DiscordButton: React.FC = () => {
         alignItems: 'center',
         gap: '0.75rem',
         backgroundColor: isHovered ? COLORS.discordBlueDark : COLORS.discordBlue,
-        padding: '1rem 2rem',
+        padding: '1.25rem 2.5rem',
         borderRadius: '0.5rem',
         border: 'none',
         color: '#FFFFFF',

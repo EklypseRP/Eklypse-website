@@ -1,42 +1,79 @@
 import React from 'react';
-import { getDynamicCategories, getAllWikiData } from '@/lib/wiki';
-import { CategoryCard } from '@/app/wiki/WikiClientComponents';
+import { getAllWikiData } from '@/lib/wiki';
+import WikiSidebar from '@/app/components/WikiSidebar';
+import WikiCategoryCard from '@/app/components/WikiCategoryCard'; 
+
+const DARK_BG = '#0A0612';
 
 export default async function WikiPage() {
-  const categories = getDynamicCategories();
   const allArticles = getAllWikiData();
+  
+  const categoryIds = Array.from(new Set(allArticles.map(a => a.category)));
+  const categoriesData = categoryIds.map(id => {
+    const articlesInCat = allArticles.filter(a => a.category === id);
+    const catIcon = articlesInCat.find(a => a.categoryIcon)?.categoryIcon || '📁';
+    
+    return {
+      id,
+      title: id.charAt(0).toUpperCase() + id.slice(1),
+      icon: catIcon,
+      articles: articlesInCat.map(a => ({
+        slug: a.slug,
+        title: a.title,
+        icon: a.icon
+      }))
+    };
+  });
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
-      <div style={{ textAlign: 'center', marginBottom: '3rem', marginTop: '3rem' }}>
-        <h1 style={{
-          fontSize: 'clamp(2.5rem, 5vw, 3.5rem)',
-          fontWeight: 'bold',
-          marginBottom: '1rem',
-          background: 'linear-gradient(to right, #CBDBFC, #683892)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        }}>
-          Wiki d'Eklypse
-        </h1>
-        <p style={{ color: 'rgba(203, 219, 252, 0.8)', fontSize: '1.125rem' }}>
-          Explorez l'univers dynamique d'Eklypse.
-        </p>
-      </div>
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'stretch', 
+      minHeight: '100vh',
+      backgroundColor: DARK_BG, 
+      color: '#CBDBFC',
+      position: 'relative',
+      marginTop: '-2rem', 
+      marginBottom: '-4rem',
+    }}>
+      <WikiSidebar categories={categoriesData} />
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '1.5rem'
+      <main style={{ 
+        flex: 1, 
+        padding: '4rem clamp(1rem, 5vw, 4rem) 6rem',
+        position: 'relative'
       }}>
-        {categories.map(cat => (
-          <CategoryCard
-            key={cat.id}
-            category={cat}
-            articleCount={allArticles.filter(a => a.category === cat.id).length}
-          />
-        ))}
-      </div>
+        
+        <header style={{ textAlign: 'center', marginBottom: '4rem' }}>
+          <h2 style={{ 
+            fontSize: 'clamp(2.5rem, 5vw, 4.5rem)',
+            fontWeight: '600', 
+            color: 'rgb(203, 219, 252)',
+            letterSpacing: '0.15em',
+            marginBottom: '1rem'
+          }}>
+            Wiki d'Eklypse
+          </h2>
+          <div style={{ 
+            height: '3px', 
+            width: '80px', 
+            background: 'linear-gradient(to right, transparent, #683892, transparent)', 
+            margin: '0 auto' 
+          }} />
+        </header>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '2.5rem',
+          maxWidth: '1200px',
+          margin: '0 auto'
+        }}>
+          {categoriesData.map((category) => (
+            <WikiCategoryCard key={category.id} category={category} />
+          ))}
+        </div>
+      </main>
     </div>
   );
 }
