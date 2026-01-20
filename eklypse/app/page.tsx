@@ -149,7 +149,6 @@ const HeroSection: React.FC = () => (
 );
 
 const StoryPreview: React.FC = () => (
-  /* --- MODIFICATION : Section plus large (68rem) --- */
   <section style={{ maxWidth: '68rem', margin: '0 auto 4rem' }}>
     <Card>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginBottom: '1.5rem' }}>
@@ -179,14 +178,12 @@ const StoryPreview: React.FC = () => (
 );
 
 const FeaturesSection: React.FC = () => (
-  /* --- MODIFICATION : Section élargie à 1400px --- */
   <section style={{ maxWidth: '1400px', margin: '0 auto 4rem' }}>
     <h3 style={{ fontSize: 'clamp(1.875rem, 4vw, 2.25rem)', fontWeight: 'bold', textAlign: 'center', marginBottom: '3rem' }}>
       L'Expérience Eklypse
     </h3>
     <div style={{
       display: 'grid',
-      // Augmentation de la largeur minimale des cartes à 400px pour les rendre plus larges
       gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
       gap: '2.5rem'
     }}>
@@ -210,18 +207,30 @@ const FeaturesSection: React.FC = () => (
 );
 
 const JoinSection: React.FC = () => (
-  /* --- MODIFICATION : Section plus large (68rem) --- */
-  <section style={{ maxWidth: '68rem', margin: '0 auto' }}>
+  /* --- MODIFICATION : maxWidth réduit à 45rem pour une card plus compacte --- */
+  <section style={{ maxWidth: '45rem', margin: '0 auto' }}>
     <Card gradient>
       <h3 style={{ fontSize: 'clamp(1.5rem, 3vw, 1.875rem)', fontWeight: 'bold', marginBottom: '1.5rem', textAlign: 'center' }}>
         Prêt à Commencer Votre Aventure ?
       </h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
-        <Step number="1" text="Rejoignez notre serveur Discord officiel" />
-        <Step number="2" text="Complétez le processus de vérification (serveur en whitelist)" />
-        <Step number="3" text="Recevez l'adresse IP du serveur après validation" />
-        <Step number="4" text="Lancez Minecraft Java Edition et rejoignez Eklypse !" />
+      
+      {/* --- MODIFICATION : Liste centrée via display: flex et alignItems: center --- */}
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        gap: '1rem', 
+        marginBottom: '2rem' 
+      }}>
+        {/* Un conteneur interne pour garder le texte aligné à gauche par rapport aux numéros */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <Step number="1" text="Rejoignez notre serveur Discord officiel" />
+          <Step number="2" text="Complétez le processus de vérification (serveur en whitelist)" />
+          <Step number="3" text="Recevez l'adresse IP du serveur après validation" />
+          <Step number="4" text="Lancez Minecraft Java Edition et rejoignez Eklypse !" />
+        </div>
       </div>
+
       <div style={{ textAlign: 'center' }}>
         <DiscordButton />
       </div>
@@ -242,7 +251,7 @@ const Card: React.FC<CardProps> = ({ children, gradient = false }) => (
       : COLORS.cardBg,
     backdropFilter: 'blur(8px)',
     borderRadius: '0.5rem',
-    padding: 'clamp(1.5rem, 4vw, 3.5rem)', // Padding horizontal augmenté pour plus de largeur visuelle
+    padding: 'clamp(1.5rem, 4vw, 3.5rem)',
     border: `1px solid ${gradient ? 'rgba(104, 56, 146, 0.5)' : COLORS.cardBorder}`,
     boxShadow: gradient ? '0 25px 50px -12px rgba(0, 0, 0, 0.25)' : '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
   }}>
@@ -265,7 +274,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) =
         backgroundColor: COLORS.cardBg,
         backdropFilter: 'blur(12px)',
         borderRadius: '0.8rem',
-        padding: '3rem', // Augmentation du padding pour aérer
+        padding: '3rem',
         border: `1px solid ${isHovered ? COLORS.purple : COLORS.cardBorder}`,
         transition: 'all 0.4s ease',
         boxShadow: isHovered ? '0 15px 30px -5px rgba(104, 56, 146, 0.3)' : '0 10px 15px -3px rgba(0,0,0,0.2)',

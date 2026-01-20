@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -28,7 +28,7 @@ const SidebarLink = ({ href, title, icon, isActive, isCollapsed }: any) => {
         alignItems: 'center',
         gap: '0.7rem',
         position: 'relative',
-        transition: 'all 0.3s ease',
+        transition: 'all 0.8s ease',
         color: (isActive || isHovered) ? COLORS.lightText : 'rgba(203, 219, 252, 0.5)',
         justifyContent: isCollapsed ? 'center' : 'flex-start',
       }}
@@ -36,7 +36,7 @@ const SidebarLink = ({ href, title, icon, isActive, isCollapsed }: any) => {
       <span style={{ 
         fontSize: '1.1rem', 
         filter: isHovered || isActive ? 'none' : 'grayscale(100%) opacity(0.4)',
-        transition: 'all 0.3s' 
+        transition: 'all 0.8s ease' 
       }}>
         {icon || '📄'}
       </span>
@@ -52,16 +52,20 @@ const SidebarLink = ({ href, title, icon, isActive, isCollapsed }: any) => {
         </span>
       )}
 
-      {!isCollapsed && (isActive || isHovered) && (
+      {/* LIGNE DYNAMIQUE DE L'ARTICLE - Toujours présente mais animée */}
+      {!isCollapsed && (
         <span style={{
           position: 'absolute',
           bottom: '2px',
           left: '50%',
-          width: '80%',
+          transform: 'translateX(-50%)',
+          // MODIFICATION : Transition de 0% à 60% pour l'effet de glissement
+          width: (isActive || isHovered) ? '60%' : '0%',
+          opacity: (isActive || isHovered) ? 1 : 0,
           height: '2px',
           background: `linear-gradient(to right, transparent, ${COLORS.purple}, transparent)`,
-          transform: 'translateX(-50%)',
-          transition: 'all 0.3s ease',
+          transition: 'width 0.8s ease, opacity 0.8s ease',
+          pointerEvents: 'none'
         }} />
       )}
     </Link>
@@ -72,145 +76,148 @@ const SidebarLink = ({ href, title, icon, isActive, isCollapsed }: any) => {
 export default function WikiSidebar({ categories }: { categories: any[] }) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isBtnHovered, setIsBtnHovered] = useState(false);
-  const [isTitleHovered, setIsTitleHovered] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [isTitleHovered, setIsTitleHovered] = useState(false); // État pour l'effet over du titre
+
+  useEffect(() => {
+    const width = window.innerWidth;
+    setWindowWidth(width);
+    setIsMounted(true);
+    
+    if (width < 1024) {
+      setIsCollapsed(true);
+    }
+
+    const timer = setTimeout(() => setIsReady(true), 100);
+
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timer);
+    };
+  }, []);
+
+  const isMobile = isMounted ? windowWidth < 1024 : false;
+
+  const transitionStyle = (isReady && !isMobile) 
+    ? 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease' 
+    : (isReady && isMobile ? 'height 0.4s ease, padding 0.4s ease' : 'none');
 
   return (
     <aside style={{
-      width: isCollapsed ? '80px' : '300px',
-      minWidth: isCollapsed ? '80px' : '300px',
+      width: isMobile ? '100%' : (isCollapsed ? '80px' : '300px'),
+      minWidth: isMobile ? '100%' : (isCollapsed ? '80px' : '300px'),
       display: 'flex',
       flexDirection: 'column',
-      gap: '2.5rem',
-      position: 'sticky',
+      gap: isMobile && isCollapsed ? '0' : '2.5rem',
+      position: isMobile ? 'relative' : 'sticky',
       top: 0,
-      height: '100vh',
-      overflowY: 'auto',
+      height: isMobile ? (isCollapsed ? '50px' : 'auto') : '100vh',
+      maxHeight: isMobile && !isCollapsed ? '70vh' : 'none',
+      overflowY: isMobile && isCollapsed ? 'hidden' : 'auto',
       overflowX: 'hidden',
-      scrollbarWidth: 'none',
-      msOverflowStyle: 'none',
       backgroundColor: COLORS.almostBlack,
-      borderRight: `1px solid ${COLORS.cardBorder}`, 
-      padding: isCollapsed ? '2.5rem 0.5rem' : '2.5rem 1.5rem',
+      borderRight: isMobile ? 'none' : `1px solid ${COLORS.cardBorder}`, 
+      borderBottom: isMobile ? `1px solid ${COLORS.cardBorder}` : 'none',
+      padding: isMobile 
+        ? (isCollapsed ? '0.5rem 1.5rem' : '1.5rem') 
+        : (isCollapsed ? '2.5rem 0.5rem' : '2.5rem 1.5rem'),
       zIndex: 20,
-      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+      transition: transitionStyle,
     }}>
       
-      <style>{`aside::-webkit-scrollbar { display: none; }`}</style>
-      
-      {/* BOUTON TOGGLE */}
       <button 
         onClick={() => setIsCollapsed(!isCollapsed)}
-        onMouseEnter={() => setIsBtnHovered(true)}
-        onMouseLeave={() => setIsBtnHovered(false)}
         style={{
-          position: 'fixed',
-          left: isCollapsed ? '64px' : '284px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          background: isBtnHovered ? COLORS.purple : COLORS.almostBlack,
+          position: isMobile ? 'absolute' : 'fixed',
+          right: isMobile ? '1.5rem' : 'auto',
+          left: isMobile ? 'auto' : (isCollapsed ? '64px' : '284px'),
+          top: isMobile ? '10px' : '50%',
+          transform: isMobile ? 'none' : 'translateY(-50%)',
+          background: COLORS.almostBlack,
           border: `1px solid ${COLORS.cardBorder}`,
           color: COLORS.lightText,
           borderRadius: '50%',
-          width: '32px',
-          height: '32px',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-          boxShadow: isBtnHovered ? `0 0 15px ${COLORS.purple}` : '0 4px 10px rgba(0,0,0,0.5)',
+          width: '30px', height: '30px', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'all 0.4s ease',
           zIndex: 100,
-          fontSize: '1.2rem',
         }}
       >
-        {isCollapsed ? '›' : '‹'}
+        {isMobile ? (isCollapsed ? '▼' : '▲') : (isCollapsed ? '›' : '‹')}
       </button>
 
-      {/* TITRE WIKI */}
-      {!isCollapsed && (
-        <Link 
-          href="/wiki" 
-          onMouseEnter={() => setIsTitleHovered(true)}
-          onMouseLeave={() => setIsTitleHovered(false)}
-          style={{
-            fontSize: '0.7rem',
-            fontWeight: '900',
-            color: isTitleHovered ? COLORS.lightText : 'rgba(203, 219, 252, 0.3)',
-            textDecoration: 'none',
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            marginBottom: '0.5rem',
-            transition: 'all 0.3s ease',
-          }}
-        >
-          Documentation / Wiki
-        </Link>
-      )}
+      {/* TITRE WIKI AVEC EFFET OVER RESTAURÉ */}
+      <div style={{ opacity: isCollapsed && isMobile ? 0.5 : 1, transition: 'opacity 0.3s' }}>
+        {(!isCollapsed || isMobile) && (
+          <Link 
+            href="/wiki" 
+            onMouseEnter={() => setIsTitleHovered(true)}
+            onMouseLeave={() => setIsTitleHovered(false)}
+            style={{ 
+              fontSize: '0.7rem', 
+              fontWeight: '900', 
+              color: isTitleHovered ? COLORS.lightText : 'rgba(203, 219, 252, 0.3)', 
+              textDecoration: 'none', 
+              letterSpacing: '0.2em', 
+              textTransform: 'uppercase',
+              transition: 'color 0.8s ease',
+              display: 'block',
+              marginBottom: '0.5rem'
+            }}
+          >
+            Documentation / Wiki
+          </Link>
+        )}
+      </div>
 
-      {/* NAVIGATION CATEGORIES */}
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+      <nav style={{ 
+        display: isMobile && isCollapsed ? 'none' : 'flex', 
+        flexDirection: 'column', 
+        gap: '2.5rem',
+        marginTop: isMobile ? '1rem' : '0'
+      }}>
         {categories.map((cat) => {
           const isCategoryActive = pathname.includes(`/wiki/${cat.id}`);
-
           return (
             <div key={cat.id} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              
-              {/* TITRE DE CATÉGORIE AVEC LIGNE DYNAMIQUE */}
-              <div style={{ 
-                display: 'inline-flex', // Utilisation d'inline-flex pour que la largeur s'adapte au contenu
-                alignItems: 'center', 
-                justifyContent: isCollapsed ? 'center' : 'flex-start',
-                gap: '0.8rem',
-                color: COLORS.lightText,
-                paddingLeft: isCollapsed ? '0' : '0.5rem',
-                position: 'relative',
-                paddingBottom: isCollapsed ? '0' : '0.6rem', // Espace pour la ligne
-                width: isCollapsed ? '100%' : 'fit-content' // S'adapte au mot si déplié
-              }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: COLORS.lightText, position: 'relative', paddingBottom: isCollapsed ? '0' : '0.6rem' }}>
                 <span style={{ fontSize: '1.3rem' }}>{cat.icon}</span>
-                {!isCollapsed && (
-                  <span style={{ 
-                    fontWeight: '800', 
-                    fontSize: '0.8rem', 
-                    textTransform: 'uppercase', 
-                    letterSpacing: '0.1em' 
-                  }}>
-                    {cat.title}
-                  </span>
-                )}
-
-                {/* LA LIGNE DÉGRADÉE (Même style que les articles) */}
+                {!isCollapsed && <span style={{ fontWeight: '800', fontSize: '0.8rem', textTransform: 'uppercase' }}>{cat.title}</span>}
+                
                 {isCategoryActive && !isCollapsed && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: '50%',
-                    transform: 'translateX(-50%)', // Centrage sous le mot
-                    width: '100%', // Toute la longueur du mot + icône
-                    height: '2px',
-                    background: `linear-gradient(to right, transparent, ${COLORS.purple}, transparent)`,
-                    borderRadius: '2px'
+                  <div style={{ 
+                    position: 'absolute', 
+                    bottom: 0, 
+                    left: '50%', 
+                    transform: 'translateX(-50%)', 
+                    width: '75%', 
+                    height: '2px', 
+                    background: `linear-gradient(to right, transparent, ${COLORS.purple}, transparent)`, 
+                    transition: 'width 0.8s ease, opacity 0.8s ease' 
                   }} />
                 )}
               </div>
 
-              {/* LISTE ARTICLES */}
               <div style={{ 
                 display: 'flex', 
                 flexDirection: 'column', 
-                gap: '0.3rem',
-                borderLeft: isCollapsed ? 'none' : '1px solid rgba(104, 56, 146, 0.1)',
-                marginLeft: isCollapsed ? '0' : '0.65rem'
+                gap: '0.3rem', 
+                borderLeft: isCollapsed ? 'none' : '1px solid rgba(104, 56, 146, 0.1)', 
+                marginLeft: isCollapsed ? '0' : '0.65rem' 
               }}>
                 {cat.articles.map((art: any) => (
                   <SidebarLink 
-                    key={art.slug}
-                    href={`/wiki/${cat.id}/${art.slug}`}
-                    title={art.title}
-                    icon={art.icon}
-                    isActive={pathname === `/wiki/${cat.id}/${art.slug}`}
-                    isCollapsed={isCollapsed}
+                    key={art.slug} 
+                    href={`/wiki/${cat.id}/${art.slug}`} 
+                    title={art.title} 
+                    icon={art.icon} 
+                    isActive={pathname === `/wiki/${cat.id}/${art.slug}`} 
+                    isCollapsed={isCollapsed} 
                   />
                 ))}
               </div>

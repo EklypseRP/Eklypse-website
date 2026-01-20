@@ -5,25 +5,38 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 
-// On utilise les constantes de couleurs basées sur votre page.tsx
 const COLORS = {
   purple: '#683892',
   lightText: '#CBDBFC',
   cardBorder: 'rgba(104, 56, 146, 0.3)',
-  almostBlack: '#0A0612', // Noir profond original
+  almostBlack: '#0A0612',
 };
 
 const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(0);
   const pathname = usePathname();
 
   useEffect(() => {
+    setWindowWidth(window.innerWidth);
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+      if (window.innerWidth > 1024) setIsMobileMenuOpen(false);
+    };
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
+
+    window.addEventListener('resize', handleResize);
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
+
+  const isMobile = windowWidth < 1024;
 
   const navItems = [
     { href: '/', label: 'Accueil' },
@@ -37,24 +50,17 @@ const Header: React.FC = () => {
       left: 0,
       right: 0,
       zIndex: 100,
-      padding: '0.75rem 2rem',
-      
-      /* --- MODIFICATION : Fond plus sombre pour la séparation --- */
-      // On utilise 0.98 d'opacité pour un effet presque plein, avec un léger flou
-      backgroundColor: isScrolled ? 'rgba(10, 6, 18, 0.98)' : 'rgba(10, 6, 18, 0.4)', 
+      padding: isMobile ? '0.5rem 1.5rem' : '0.75rem 2rem',
+      backgroundColor: (isScrolled || isMobileMenuOpen) ? 'rgba(10, 6, 18, 0.98)' : 'rgba(10, 6, 18, 0.4)', 
       backdropFilter: 'blur(12px)',
-      // Bordure toujours visible mais plus marquée lors du scroll
-      borderBottom: `0.5px solid ${isScrolled ? COLORS.cardBorder : 'rgba(104, 56, 146, 0.1)'}`,
-      /* ----------------------------------------------------------- */
-      
-      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-      display: 'grid',
-      gridTemplateColumns: '1fr auto 1fr',
+      borderBottom: `0.5px solid ${(isScrolled || isMobileMenuOpen) ? COLORS.cardBorder : 'rgba(104, 56, 146, 0.1)'}`,
+      transition: 'background-color 0.4s ease',
+      display: 'flex',
+      justifyContent: 'space-between',
       alignItems: 'center'
     }}>
       
-      {/* Logo Image à Gauche */}
-      <div style={{ justifySelf: 'start' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
         <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
           <Image 
             src="/Eklypse.png" 
@@ -62,7 +68,7 @@ const Header: React.FC = () => {
             width={120} 
             height={40}
             style={{ 
-              height: '80px', 
+              height: isMobile ? '55px' : '80px', 
               width: 'auto',
               objectFit: 'contain'
             }}
@@ -71,39 +77,92 @@ const Header: React.FC = () => {
         </Link>
       </div>
 
-      {/* Navigation au Centre */}
-      <nav style={{ 
-        display: 'flex', 
-        gap: '2.5rem',
-        alignItems: 'center',
-        justifySelf: 'center' 
-      }}>
-        {navItems.map((item) => {
-          const isActive = item.href === '/' 
-            ? pathname === '/' 
-            : pathname.startsWith(item.href);
-
-          return (
+      {!isMobile && (
+        <nav style={{ 
+          display: 'flex', 
+          gap: '2.5rem',
+          alignItems: 'center',
+          position: 'absolute',
+          left: '50%',
+          transform: 'translateX(-50%)'
+        }}>
+          {navItems.map((item) => (
             <NavLink 
               key={item.href} 
               href={item.href} 
               label={item.label} 
-              isActive={isActive} 
+              isActive={item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)} 
             />
-          );
-        })}
-      </nav>
+          ))}
+        </nav>
+      )}
 
-      {/* Colonne de droite vide pour maintenir l'équilibre du centrage */}
-      <div style={{ justifySelf: 'end' }} />
+      {isMobile && (
+        <button 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: COLORS.lightText,
+            fontSize: '1.8rem',
+            cursor: 'pointer',
+            padding: '0.5rem',
+            zIndex: 110
+          }}
+        >
+          {isMobileMenuOpen ? '✕' : '☰'}
+        </button>
+      )}
 
+      {!isMobile && <div style={{ flex: 1 }} />}
+
+      {isMobile && isMobileMenuOpen && (
+        <div style={{
+          position: 'fixed',
+          top: '100%',
+          left: 0,
+          right: 0,
+          backgroundColor: 'rgba(10, 6, 18, 0.98)',
+          borderBottom: `1px solid ${COLORS.cardBorder}`,
+          padding: '1.5rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+          animation: 'slideDown 0.3s ease-out'
+        }}>
+          {navItems.map((item) => (
+            <Link 
+              key={item.href} 
+              href={item.href}
+              onClick={() => setIsMobileMenuOpen(false)}
+              style={{
+                color: (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))) ? COLORS.lightText : 'rgba(203, 219, 252, 0.65)',
+                textDecoration: 'none',
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                textTransform: 'uppercase',
+                padding: '0.75rem 0',
+                borderBottom: '1px solid rgba(104, 56, 146, 0.1)'
+              }}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slideDown {
+          from { transform: translateY(-10px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+      `}</style>
     </header>
   );
 };
 
 const NavLink = ({ href, label, isActive }: { href: string, label: string, isActive: boolean }) => {
   const [isHovered, setIsHovered] = useState(false);
-
   return (
     <Link 
       href={href}
@@ -117,7 +176,7 @@ const NavLink = ({ href, label, isActive }: { href: string, label: string, isAct
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
         position: 'relative',
-        transition: 'all 0.3s ease',
+        transition: 'color 0.3s ease',
         padding: '0.5rem 0'
       }}
     >
