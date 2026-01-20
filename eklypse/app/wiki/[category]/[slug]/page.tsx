@@ -57,7 +57,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ catego
         </div>
 
         <article style={{
-          maxWidth: '1000px',
+          maxWidth: '1200px', // AUGMENTATION : Passage de 1000px à 1200px
           background: 'rgba(255, 255, 255, 0.02)', 
           backdropFilter: 'blur(20px)',
           padding: 'clamp(1.5rem, 5vw, 4rem)',
