@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Eklypse",
-  description: "Rejoingez l'aventure",
+  description: "Entrez dans la légende... avant qu'elle ne s'éteigne.",
 };
 
 export default function RootLayout({
