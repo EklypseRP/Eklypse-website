@@ -10,15 +10,13 @@ export default async function ArticlePage({
 }) {
   const { category, slug } = await params;
   
-  // Récupération de toutes les données du wiki
   const allArticles = getAllWikiData();
   
-  // Recherche de l'article correspondant à la catégorie et au slug
+  // Recherche l'article (que l'extension soit .md ou .markdown, le slug est le même)
   const article = allArticles.find(
     (a) => a.category === category && a.slug === slug
   );
 
-  // Gestion du cas où l'article n'existe pas
   if (!article) {
     return (
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '5rem 1rem', textAlign: 'center' }}>
@@ -31,25 +29,22 @@ export default async function ArticlePage({
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
       
-      {/* Bouton retour vers la liste de la catégorie */}
       <BackButton href={`/wiki/${category}`} label="Retour à la liste" />
       
       <article style={{
-        background: 'rgba(50, 27, 70, 0.4)',
-        backdropFilter: 'blur(10px)',
-        // Padding adaptatif : plus grand sur PC (4rem) pour plus de confort
+        // Utilisation de la couleur la plus sombre du gradient
+        background: 'rgba(10, 6, 18, 0.9)', 
+        backdropFilter: 'blur(12px)',
         padding: 'clamp(1.5rem, 5vw, 4rem)', 
         borderRadius: '1rem',
-        border: '1px solid rgba(104, 56, 146, 0.3)',
+        border: '1px solid rgba(104, 56, 146, 0.2)',
         marginBottom: '4rem',
-        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)',
+        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
         width: '100%'
       }}>
         
-        {/* Rendu dynamique du contenu Markdown */}
         <MarkdownRenderer content={article.content} />
         
-        {/* Pied de page de l'article : Date de mise à jour */}
         {article.lastUpdated && (
           <div style={{ 
             marginTop: '3rem', 

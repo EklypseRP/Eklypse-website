@@ -26,15 +26,15 @@ export function getAllWikiData(): WikiArticle[] {
       const files = fs.readdirSync(categoryPath);
       
       files.forEach((file) => {
-        if (file.endsWith('.md')) {
+        if (file.endsWith('.md')|| file.endsWith('.markdown')) {
           const filePath = path.join(categoryPath, file);
           const fileContent = fs.readFileSync(filePath, 'utf8');
           const { data, content } = matter(fileContent);
           
           allArticles.push({
-            slug: file.replace('.md', ''),
+            slug: file.replace(/\.(md|markdown)$/, ''), 
             category,
-            title: data.title || file.replace('.md', ''),
+            title: data.title || file.replace(/\.(md|markdown)$/, ''),
             content: content,
             icon: data.icon,
             categoryIcon: data.categoryIcon,
