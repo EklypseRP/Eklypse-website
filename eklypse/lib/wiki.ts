@@ -1,77 +1,108 @@
+// lib/wiki.ts
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 
 const wikiDirectory = path.join(process.cwd(), 'content/wiki');
 
-export interface WikiArticle {
-  slug: string;
-  category: string;
+export interface WikiNode {
+  name: string;
+  type: 'file' | 'folder';
+  path: string; // ex: "races/elfes"
+  icon: string;
   title: string;
-  content: string;
-  icon?: string;         // Icône de l'article (petite carte)
-  categoryIcon?: string; // Icône de la catégorie (grosse carte)
-  lastUpdated?: string;
+  children?: WikiNode[];
+  content?: string;
 }
 
-export function getAllWikiData(): WikiArticle[] {
-  if (!fs.existsSync(wikiDirectory)) return [];
+// Transforme "ma-categorie" en "Ma Categorie"
+export const formatTitle = (slug: string) => {
+  return slug
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
 
-  const categories = fs.readdirSync(wikiDirectory);
-  const allArticles: WikiArticle[] = [];
+// Fonction récursive pour scanner TOUT le dossier wiki
+export function getWikiTree(currentDir: string = wikiDirectory, relativePath: string = ""): WikiNode[] {
+  if (!fs.existsSync(currentDir)) return [];
+  
+  const items = fs.readdirSync(currentDir);
+  const nodes: WikiNode[] = [];
 
-  categories.forEach((category) => {
-    const categoryPath = path.join(wikiDirectory, category);
-    if (fs.statSync(categoryPath).isDirectory()) {
-      const files = fs.readdirSync(categoryPath);
-      
-      files.forEach((file) => {
-        if (file.endsWith('.md')|| file.endsWith('.markdown')) {
-          const filePath = path.join(categoryPath, file);
-          const fileContent = fs.readFileSync(filePath, 'utf8');
-          const { data, content } = matter(fileContent);
-          
-          allArticles.push({
-            slug: file.replace(/\.(md|markdown)$/, ''), 
-            category,
-            title: data.title || file.replace(/\.(md|markdown)$/, ''),
-            content: content,
-            icon: data.icon,
-            categoryIcon: data.categoryIcon,
-            lastUpdated: data.lastUpdated,
-          });
-        }
+  items.forEach((item) => {
+    if (item === 'index.md' || item === 'index.markdown' || item.startsWith('.')) return;
+
+    const fullPath = path.join(currentDir, item);
+    const itemRelativePath = relativePath ? `${relativePath}/${item}` : item;
+    const stat = fs.statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      // Pour un dossier, on cherche un index.md pour l'icône, sinon 📁
+      const indexPath = path.join(fullPath, 'index.md');
+      let icon = "📁";
+      let title = formatTitle(item);
+
+      if (fs.existsSync(indexPath)) {
+        const { data } = matter(fs.readFileSync(indexPath, 'utf8'));
+        if (data.categoryIcon || data.icon) icon = data.categoryIcon || data.icon;
+        if (data.title) title = data.title;
+      }
+
+      nodes.push({
+        name: item,
+        type: 'folder',
+        path: itemRelativePath,
+        icon,
+        title,
+        children: getWikiTree(fullPath, itemRelativePath) // RÉCURSIVITÉ
+      });
+    } else if (item.endsWith('.md') || item.endsWith('.markdown')) {
+      // Pour un fichier
+      const { data } = matter(fs.readFileSync(fullPath, 'utf8'));
+      const slug = item.replace(/\.(md|markdown)$/, '');
+      const cleanPath = itemRelativePath.replace(/\.(md|markdown)$/, '');
+
+      nodes.push({
+        name: slug,
+        type: 'file',
+        path: cleanPath,
+        icon: data.icon || "📄",
+        title: data.title || formatTitle(slug)
       });
     }
   });
 
-  return allArticles;
+  // Trie : Dossiers d'abord, puis alphabétique
+  return nodes.sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+    return a.title.localeCompare(b.title);
+  });
 }
 
-// Génère les noms et icônes uniquement à partir des dossiers et du frontmatter
-export function getDynamicCategories() {
-  if (!fs.existsSync(wikiDirectory)) return [];
+// Récupère les données d'un nœud spécifique (dossier ou fichier)
+export function getWikiContent(segments: string[]) {
+  const relPath = segments.join('/');
+  const fullPath = path.join(wikiDirectory, relPath);
+  
+  // 1. Est-ce un fichier .md ou .markdown ?
+  const extensions = ['.md', '.markdown'];
+  for (const ext of extensions) {
+    if (fs.existsSync(fullPath + ext)) {
+      const { data, content } = matter(fs.readFileSync(fullPath + ext, 'utf8'));
+      return { data, content, type: 'file' as const };
+    }
+  }
+  
+  // 2. Est-ce un dossier ? On cherche son index.md pour le contenu optionnel
+  if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
+    const indexPath = path.join(fullPath, 'index.md');
+    if (fs.existsSync(indexPath)) {
+      const { data, content } = matter(fs.readFileSync(indexPath, 'utf8'));
+      return { data, content, type: 'folder' as const };
+    }
+    return { data: {}, content: "", type: 'folder' as const };
+  }
 
-  const folders = fs.readdirSync(wikiDirectory).filter(file => 
-    fs.statSync(path.join(wikiDirectory, file)).isDirectory()
-  );
-
-  const allArticles = getAllWikiData();
-
-  return folders.map(folder => {
-    // Cherche si un article du dossier définit l'icône de catégorie
-    const articleWithCatIcon = allArticles.find(a => a.category === folder && a.categoryIcon);
-    
-    // Formate le nom du dossier (ex: "histoire-du-monde" -> "Histoire Du Monde")
-    const formattedName = folder
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-
-    return {
-      id: folder,
-      name: formattedName,
-      icon: articleWithCatIcon?.categoryIcon || "📁"
-    };
-  });
+  return null;
 }

@@ -19,6 +19,20 @@ const COLORS = {
   discordBlueDark: '#4752C4',
 };
 
+// RÉGLAGE DE L'ANIMATION (Harmonisé avec le Wiki)
+const FADE_IN_ANIMATION = `
+  @keyframes smoothFadeIn {
+    from { 
+      opacity: 0; 
+      transform: translateY(4px); 
+    }
+    to { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+  }
+`;
+
 const SCROLL_COLORS = {
   start: { r: 28, g: 15, b: 38 },
   mid: { r: 20, g: 10, b: 28 },
@@ -67,7 +81,7 @@ const useScrollProgress = () => {
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight - windowHeight;
       const scrolled = window.scrollY;
-      const progress = Math.min(scrolled / documentHeight, 1);
+      const progress = Math.min(scrolled / (documentHeight || 1), 1);
       setScrollProgress(progress);
     };
     window.addEventListener('scroll', handleScroll);
@@ -102,10 +116,20 @@ export default function EklypseWebsite() {
       color: COLORS.lightText,
       transition: 'background 0.3s ease'
     }}>
+      {/* Injection de l'animation CSS */}
+      <style dangerouslySetInnerHTML={{ __html: FADE_IN_ANIMATION }} />
+      
       <Header />
-      <main style={{ paddingTop: '6rem', paddingBottom: '4rem' }}>
+      
+      {/* Application de l'animation sur le conteneur principal */}
+      <main style={{ 
+        paddingTop: '6rem', 
+        paddingBottom: '4rem',
+        animation: 'smoothFadeIn 0.8s ease-in-out forwards' 
+      }}>
         <HomePage />
       </main>
+      
       <Footer />
     </div>
   );
@@ -207,14 +231,12 @@ const FeaturesSection: React.FC = () => (
 );
 
 const JoinSection: React.FC = () => (
-  /* --- MODIFICATION : maxWidth réduit à 45rem pour une card plus compacte --- */
   <section style={{ maxWidth: '45rem', margin: '0 auto' }}>
     <Card gradient>
       <h3 style={{ fontSize: 'clamp(1.5rem, 3vw, 1.875rem)', fontWeight: 'bold', marginBottom: '1.5rem', textAlign: 'center' }}>
         Prêt à Commencer Votre Aventure ?
       </h3>
       
-      {/* --- MODIFICATION : Liste centrée via display: flex et alignItems: center --- */}
       <div style={{ 
         display: 'flex', 
         flexDirection: 'column', 
@@ -222,7 +244,6 @@ const JoinSection: React.FC = () => (
         gap: '1rem', 
         marginBottom: '2rem' 
       }}>
-        {/* Un conteneur interne pour garder le texte aligné à gauche par rapport aux numéros */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <Step number="1" text="Rejoignez notre serveur Discord officiel" />
           <Step number="2" text="Complétez le processus de vérification (serveur en whitelist)" />
