@@ -1,12 +1,14 @@
 import React from 'react';
-import { getWikiTree, formatTitle } from '@/lib/wiki';
-import { CategoryCard } from './WikiClientComponents';
+import { getWikiTree } from '@/lib/wiki';
 import WikiSidebar from '@/app/components/WikiSidebar';
 import WikiCategoryCard from '@/app/components/WikiCategoryCard';
 
+// FORCE LE DYNAMISME : Garantit que la Sidebar et les cartes s'actualisent 
+// dès que tu ajoutes un fichier .md ou un dossier.
+export const dynamic = 'force-dynamic';
+
 const DARK_BG = '#0A0612';
 
-// On utilise EXACTEMENT la même animation pour la cohérence
 const FADE_IN_ANIMATION = `
   @keyframes wikiFadeIn {
     from { 
@@ -21,8 +23,10 @@ const FADE_IN_ANIMATION = `
 `;
 
 export default async function WikiPage() {
+  // Récupération de l'arbre complet pour la Sidebar
   const tree = getWikiTree();
-  // On récupère les dossiers racines pour les cartes de l'accueil
+  
+  // Filtrage des dossiers racines pour la grille de la page d'accueil
   const rootCategories = tree.filter(node => node.type === 'folder');
 
   return (
@@ -33,16 +37,15 @@ export default async function WikiPage() {
       color: '#CBDBFC', 
       width: '100%' 
     }}>
-      {/* Injection de l'animation CSS */}
       <style dangerouslySetInnerHTML={{ __html: FADE_IN_ANIMATION }} />
       
+      {/* La Sidebar reçoit exactement le même "tree" que les pages dynamiques */}
       <WikiSidebar tree={tree} />
       
       <main style={{ 
         flex: 1, 
         minWidth: 0, 
         padding: '1.5rem clamp(1rem, 5vw, 4rem) 4rem',
-        // Application de la transition douce
         animation: 'wikiFadeIn 0.8s ease-in-out forwards'
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
