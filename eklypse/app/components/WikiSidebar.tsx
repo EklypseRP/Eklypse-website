@@ -13,21 +13,25 @@ const COLORS = {
 // Composant récursif pour chaque élément (Dossier ou Article)
 const NavNode = ({ node, depth = 0, isCollapsed }: { node: any, depth?: number, isCollapsed: boolean }) => {
   const pathname = usePathname();
-  const isActive = pathname === `/wiki/${node.path}`;
-  // Une catégorie est considérée "active" si on est dans l'un de ses articles
-  const isParentActive = pathname.startsWith(`/wiki/${node.path}`);
+  
+  // RÉPARATION : On décode l'URL (ex: %20 devient un espace) pour comparer avec node.path
+  const decodedPathname = decodeURIComponent(pathname);
+  const isActive = decodedPathname === `/wiki/${node.path}`;
+  const isParentActive = decodedPathname.startsWith(`/wiki/${node.path}`);
+  
   const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       <Link 
-        href={`/wiki/${node.path}`}
+        // RÉPARATION : On encode l'URL pour que le navigateur gère bien les espaces au clic
+        href={`/wiki/${encodeURI(node.path)}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{
           padding: '0.5rem 1rem',
           paddingLeft: isCollapsed ? '1rem' : `${(depth * 1.2) + 1}rem`,
-          fontSize: depth === 0 ? '0.85rem' : '0.8rem', // Plus petit pour les sous-éléments
+          fontSize: depth === 0 ? '0.85rem' : '0.8rem',
           textDecoration: 'none',
           display: 'flex',
           alignItems: 'center',
@@ -52,21 +56,19 @@ const NavNode = ({ node, depth = 0, isCollapsed }: { node: any, depth?: number, 
             overflow: 'hidden', 
             textOverflow: 'ellipsis',
             fontWeight: (depth === 0 || isActive) ? '800' : '400',
-            textTransform: depth === 0 ? 'uppercase' : 'none', // Majuscules seulement pour le 1er niveau
+            textTransform: depth === 0 ? 'uppercase' : 'none',
             letterSpacing: depth === 0 ? '0.1em' : 'normal'
           }}>
             {node.title}
           </span>
         )}
         
-        {/* LA LIGNE RESTAURÉE : S'affiche si actif ou si la souris passe dessus */}
         {!isCollapsed && (
           <span style={{
             position: 'absolute',
             bottom: '2px',
             left: '50%',
             transform: 'translateX(-50%)',
-            // S'étire de 0% à 60% au survol ou si actif
             width: (isActive || isHovered || (depth === 0 && isParentActive)) ? '60%' : '0%',
             opacity: (isActive || isHovered || (depth === 0 && isParentActive)) ? 1 : 0,
             height: '2px',
@@ -77,7 +79,6 @@ const NavNode = ({ node, depth = 0, isCollapsed }: { node: any, depth?: number, 
         )}
       </Link>
 
-      {/* Rendu des enfants pour la récursion */}
       {!isCollapsed && node.children && node.children.length > 0 && (
         <div style={{ 
           borderLeft: '1px solid rgba(104, 56, 146, 0.44)', 
@@ -101,7 +102,10 @@ export default function WikiSidebar({ tree = [] }: { tree: any[] }) {
 
   useEffect(() => {
     setIsMounted(true);
-    if (window.innerWidth < 1024) setIsCollapsed(true);
+    // Gestion auto du responsive
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setIsCollapsed(true);
+    }
   }, []);
 
   if (!isMounted) return null;
@@ -119,7 +123,6 @@ export default function WikiSidebar({ tree = [] }: { tree: any[] }) {
       transition: 'width 0.4s ease',
       zIndex: 20
     }}>
-      {/* Bouton Toggle Fixed */}
       <button 
         onClick={() => setIsCollapsed(!isCollapsed)}
         style={{
@@ -135,13 +138,15 @@ export default function WikiSidebar({ tree = [] }: { tree: any[] }) {
           height: '30px',
           cursor: 'pointer',
           zIndex: 100,
-          transition: 'all 0.4s ease'
+          transition: 'all 0.4s ease',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}
       >
         {isCollapsed ? '›' : '‹'}
       </button>
 
-      {/* Titre Documentation / Wiki */}
       <div style={{ marginBottom: '2.5rem', textAlign: isCollapsed ? 'center' : 'left' }}>
         <Link 
           href="/wiki" 

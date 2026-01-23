@@ -80,7 +80,7 @@ export default async function WikiDynamicPage({ params }: { params: Promise<{ pa
               boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '3.5rem' }}>{data.icon || (type === 'file' ? '📄' : '📁')}</span>
+                <span style={{ fontSize: '3.5rem' }}>{data.icon || (type === 'file' ? '📜' : '📁')}</span>
                 <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: '900', margin: 0 }}>{data.title || formatTitle(pathSegments[pathSegments.length - 1])}</h1>
               </div>
               <hr style={{ border: 'none', borderTop: '1px solid rgba(104, 56, 146, 0.2)', marginBottom: '2rem' }} />
