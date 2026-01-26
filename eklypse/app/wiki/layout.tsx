@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Header from '@/app/components/Header';
-import Footer from '@/app/components/Footer';
 
 const SCROLL_COLORS = {
   start: { r: 28, g: 15, b: 38 },
@@ -62,7 +60,6 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
       flexDirection: 'column',
       overflowX: 'hidden'
     }}>
-      <Header />
       <main style={{ 
         flex: 1, 
         paddingTop: isMobile ? '4.5rem' : '6rem', 
@@ -71,7 +68,6 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
       }}>
         {children}
       </main>
-      <Footer />
     </div>
   );
 }

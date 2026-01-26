@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 
 const COLORS = {
   purple: '#683892',
@@ -17,6 +18,7 @@ const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(0);
   const pathname = usePathname();
+  const { data: session }: any = useSession(); 
 
   useEffect(() => {
     setWindowWidth(window.innerWidth);
@@ -41,6 +43,7 @@ const Header: React.FC = () => {
   const navItems = [
     { href: '/', label: 'Accueil' },
     { href: '/wiki', label: 'Wiki' },
+    { href: '/candidature', label: 'Candidature' },
   ];
 
   return (
@@ -60,6 +63,7 @@ const Header: React.FC = () => {
       alignItems: 'center'
     }}>
       
+      {/* Côté Gauche : Logo */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
         <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
           <Image 
@@ -77,6 +81,7 @@ const Header: React.FC = () => {
         </Link>
       </div>
 
+      {/* Centre : Navigation Desktop */}
       {!isMobile && (
         <nav style={{ 
           display: 'flex', 
@@ -86,36 +91,101 @@ const Header: React.FC = () => {
           left: '50%',
           transform: 'translateX(-50%)'
         }}>
-          {navItems.map((item) => (
+          {navItems.map((item) => {
+            // LOGIQUE DE LA BARRE ACTIVE :
+            // Active si c'est le lien actuel OU si on est sur /login et que l'item est /candidature
+            let isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+            if (item.href === '/candidature' && pathname === '/login') {
+              isActive = true;
+            }
+
+            return (
+              <NavLink 
+                key={item.href} 
+                href={item.href} 
+                label={item.label} 
+                isActive={isActive} 
+              />
+            );
+          })}
+          
+          {session?.user?.isRecruiter && (
             <NavLink 
-              key={item.href} 
-              href={item.href} 
-              label={item.label} 
-              isActive={item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)} 
+              href="/admin/candidatures" 
+              label="Dashboard" 
+              isActive={pathname.startsWith('/admin/candidatures')} 
             />
-          ))}
+          )}
         </nav>
       )}
 
-      {isMobile && (
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: COLORS.lightText,
-            fontSize: '1.8rem',
-            cursor: 'pointer',
-            padding: '0.5rem',
-            zIndex: 110
-          }}
-        >
-          {isMobileMenuOpen ? '✕' : '☰'}
-        </button>
-      )}
+      {/* Côté Droit : Auth Button & Mobile Toggle */}
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem' }}>
+        {!isMobile && (
+          session?.user ? (
+            <button 
+              onClick={() => signOut({ callbackUrl: '/' })}
+              style={{
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                color: '#ef4444',
+                padding: '0.5rem 1.2rem',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.2)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
+            >
+              Quitter
+            </button>
+          ) : (
+            /* FIX : On masque le bouton Connexion si on est déjà sur la page /login */
+            pathname !== '/login' && (
+              <Link href="/login" style={{ textDecoration: 'none' }}>
+                <button style={{
+                  backgroundColor: COLORS.purple,
+                  border: 'none',
+                  color: 'white',
+                  padding: '0.6rem 1.5rem',
+                  borderRadius: '8px',
+                  fontSize: '0.8rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  boxShadow: `0 4px 15px ${COLORS.purple}44`
+                }}>
+                  Connexion
+                </button>
+              </Link>
+            )
+          )
+        )}
 
-      {!isMobile && <div style={{ flex: 1 }} />}
+        {isMobile && (
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: COLORS.lightText,
+              fontSize: '1.8rem',
+              cursor: 'pointer',
+              padding: '0.5rem',
+              zIndex: 110
+            }}
+          >
+            {isMobileMenuOpen ? '✕' : '☰'}
+          </button>
+        )}
+      </div>
 
+      {/* Menu Mobile */}
       {isMobile && isMobileMenuOpen && (
         <div style={{
           position: 'fixed',
@@ -130,13 +200,38 @@ const Header: React.FC = () => {
           gap: '1rem',
           animation: 'slideDown 0.3s ease-out'
         }}>
-          {navItems.map((item) => (
+          {navItems.map((item) => {
+            // Même logique isActive pour le mobile
+            let isActive = (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
+            if (item.href === '/candidature' && pathname === '/login') isActive = true;
+
+            return (
+              <Link 
+                key={item.href} 
+                href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  color: isActive ? COLORS.lightText : 'rgba(203, 219, 252, 0.65)',
+                  textDecoration: 'none',
+                  fontSize: '1.1rem',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  padding: '0.75rem 0',
+                  borderBottom: '1px solid rgba(104, 56, 146, 0.1)'
+                }}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+
+          {/* Dashboard Mobile */}
+          {session?.user?.isRecruiter && (
             <Link 
-              key={item.href} 
-              href={item.href}
+              href="/admin/candidatures"
               onClick={() => setIsMobileMenuOpen(false)}
               style={{
-                color: (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))) ? COLORS.lightText : 'rgba(203, 219, 252, 0.65)',
+                color: pathname.startsWith('/admin/candidatures') ? COLORS.lightText : 'rgba(203, 219, 252, 0.65)',
                 textDecoration: 'none',
                 fontSize: '1.1rem',
                 fontWeight: '600',
@@ -145,9 +240,47 @@ const Header: React.FC = () => {
                 borderBottom: '1px solid rgba(104, 56, 146, 0.1)'
               }}
             >
-              {item.label}
+              Dashboard
             </Link>
-          ))}
+          )}
+
+          {/* Bouton Auth Mobile */}
+          {session?.user ? (
+            <button 
+              onClick={() => { signOut({ callbackUrl: '/' }); setIsMobileMenuOpen(false); }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#ef4444',
+                textAlign: 'left',
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                textTransform: 'uppercase',
+                padding: '0.75rem 0',
+                cursor: 'pointer'
+              }}
+            >
+              Quitter
+            </button>
+          ) : (
+            /* FIX : Masqué sur mobile aussi si on est sur /login */
+            pathname !== '/login' && (
+              <Link 
+                href="/login"
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  color: COLORS.purple,
+                  textDecoration: 'none',
+                  fontSize: '1.1rem',
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  padding: '0.75rem 0'
+                }}
+              >
+                Se connecter
+              </Link>
+            )
+          )}
         </div>
       )}
 

@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Header from './components/Header';
-import Footer from './components/Footer';
 
 // ===== CONSTANTES =====
 const COLORS = {
@@ -119,8 +117,6 @@ export default function EklypseWebsite() {
       {/* Injection de l'animation CSS */}
       <style dangerouslySetInnerHTML={{ __html: FADE_IN_ANIMATION }} />
       
-      <Header />
-      
       {/* Application de l'animation sur le conteneur principal */}
       <main style={{ 
         paddingTop: '6rem', 
@@ -129,8 +125,6 @@ export default function EklypseWebsite() {
       }}>
         <HomePage />
       </main>
-      
-      <Footer />
     </div>
   );
 }
