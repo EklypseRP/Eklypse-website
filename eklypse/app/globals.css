@@ -5,13 +5,6 @@
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -24,12 +17,38 @@
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-  /* MODIFICATION : Empêche le scroll horizontal accidentel sur mobile */
-  overflow-x: hidden;
-  width: 100%;
+  background: var(--background);
+  /* On force l'utilisation de la police Geist définie dans layout.tsx */
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Styles spécifiques pour l'éditeur sans casser la police globale */
+.tiptap-editor {
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+.tiptap-editor strong { 
+  font-weight: 800 !important; 
+  color: white; 
+}
+
+.tiptap-editor em { 
+  font-style: italic !important; 
+}
+
+.tiptap-editor h2 { 
+  font-size: 1.5rem !important; 
+  font-weight: 800 !important; 
+  color: #CBDBFC; 
+  margin-top: 1.5rem; 
+  letter-spacing: -0.05em;
+}
+
+.tiptap-editor p { 
+  margin-bottom: 1rem; 
+  line-height: 1.7; 
+  color: rgba(255, 255, 255, 0.8);
 }
 
 html {

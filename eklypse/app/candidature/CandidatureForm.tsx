@@ -1,95 +1,83 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import debounce from 'lodash.debounce';
 
-const COLORS = {
-  purple: '#683892',
-  darkPurple: '#321B46',
-  lightText: '#CBDBFC',
-};
+const ToolbarButton = ({ onClick, isActive, children }: { onClick: () => void, isActive: boolean, children: React.ReactNode }) => (
+  <button
+    type="button"
+    onMouseDown={(e) => { e.preventDefault(); onClick(); }}
+    className={`flex items-center justify-center min-w-[50px] h-[45px] rounded-xl border transition-all ${isActive ? 'bg-[#683892] border-[#683892] text-white shadow-lg' : 'bg-white/5 border-white/10 text-neutral-500 hover:border-[#683892]/60'}`}
+  >
+    {children}
+  </button>
+);
 
 export default function CandidatureForm() {
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [formData, setFormData] = useState({ rpName: '', age: '' });
   const [isHovered, setIsHovered] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
+  const editor = useEditor({
+    extensions: [StarterKit],
+    immediatelyRender: false,
+    editorProps: { attributes: { class: 'tiptap-editor focus:outline-none min-h-[400px] p-10 text-white prose prose-invert max-w-none text-base' } },
+  });
 
-    try {
-      const response = await fetch('/api/candidature', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (response.ok) setStatus('success');
-      else setStatus('error');
-    } catch (error) {
-      setStatus('error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (status === 'success') {
-    return (
-      <div className="text-center py-10">
-        <div className="text-green-500 text-6xl mb-4">✓</div>
-        <h2 className="text-2xl font-bold text-white uppercase italic">Candidature transmise</h2>
-        <p className="text-neutral-400 mt-2">Votre destin est désormais entre les mains des scribes.</p>
-      </div>
-    );
-  }
-
-  const inputStyle = "w-full p-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#683892] transition-all";
-  const labelStyle = "block  text-xs font-black text-neutral-500 uppercase tracking-widest mb-2 ml-1";
+  const inputStyle = "w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-neutral-700 focus:outline-none focus:border-[#683892] transition-all";
+  const labelStyle = "block text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3 ml-1";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 ">
-        <div className="flex flex-col">
+    <form className="space-y-12">
+      {/* Section Identité : Resserrée et équilibrée */}
+      <div className="max-w-2xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-1">
           <label className={labelStyle}>Identité RP</label>
-          <input name="rpName" required placeholder="Ex: Alistair de Rivia" className={inputStyle} />
+          <input name="rpName" value={formData.rpName} onChange={(e) => setFormData({...formData, rpName: e.target.value})} placeholder="Ex: Alistair de Rivia" className={inputStyle} />
         </div>
-        <div className="flex flex-col">
+        <div className="space-y-1">
           <label className={labelStyle}>Âge</label>
-          <input name="age" type="number" required placeholder="25" className={inputStyle} />
+          <input name="age" type="number" value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})} placeholder="25" className={inputStyle} />
         </div>
       </div>
-      
-      <div className="flex flex-col">
+
+      {/* Éditeur Rich Text */}
+      <div className="space-y-4">
         <label className={labelStyle}>Récit & Motivations</label>
-        <textarea 
-          name="motivations" 
-          rows={6} 
-          required 
-          placeholder="Racontez votre histoire..." 
-          className={`${inputStyle} resize-none`} 
-        />
+        <div className="group relative border border-white/10 rounded-3xl bg-white/[0.02] overflow-hidden focus-within:border-[#683892] transition-all shadow-xl">
+          <div className="flex items-center justify-center gap-4 p-5 bg-black/40 border-b border-white/10">
+             <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} isActive={!!editor?.isActive('bold')}>B</ToolbarButton>
+             <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} isActive={!!editor?.isActive('italic')}>I</ToolbarButton>
+             
+             {/* Sélecteurs Taille & Interligne (Simulation UI) */}
+             <select className="bg-white/5 border border-white/10 text-[16px] text-neutral-400 rounded-lg px-2 py-2 outline-none">
+                <option>Taille</option><option>16px</option><option>18px</option>
+             </select>
+             <select className="bg-white/5 border border-white/10 text-[16px] text-neutral-400 rounded-lg px-2 py-2 outline-none">
+                <option>Interligne</option><option>1.5</option><option>1.8</option>
+             </select>
+
+             <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} isActive={!!editor?.isActive('bulletList')}>•—</ToolbarButton>
+          </div>
+          <EditorContent editor={editor} />
+        </div>
       </div>
 
-      <br />
-      <button 
-        type="submit" 
-        disabled={loading}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        style={{
-          background: isHovered 
-            ? `linear-gradient(to right, ${COLORS.darkPurple}, ${COLORS.purple})`
-            : `linear-gradient(to right, ${COLORS.purple}, ${COLORS.darkPurple})`,
-          transform: isHovered ? 'scale(1.02)' : 'scale(1)',
-          boxShadow: isHovered ? '0 10px 20px rgba(104, 56, 146, 0.4)' : 'none',
-        }}
-        className="w-full py-6 rounded-xl text-white font-black uppercase text-base tracking-[0.2em] transition-all duration-300 disabled:opacity-50"
-      >
-        {loading ? "Envoi du parchemin..." : "Soumettre ma candidature"}
-      </button>
-
-      {status === 'error' && <p className="text-red-500 text-center font-bold uppercase text-[10px] tracking-widest">Une erreur magique est survenue.</p>}
+      {/* Bouton de soumission : Plus long, sans emoji, bords arrondis [3rem] */}
+      <div className="flex justify-center pt-6">
+        <button 
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          style={{
+            background: isHovered ? 'linear-gradient(135deg, #321B46, #683892)' : 'linear-gradient(135deg, #683892, #321B46)',
+            boxShadow: isHovered ? '0 20px 40px rgba(104, 56, 146, 0.3)' : 'none',
+          }}
+          className="w-full max-w-2xl py-7 rounded-[3rem] text-white font-black uppercase text-sm tracking-[0.4em] transition-all duration-500 scale-100 hover:scale-[1.02]"
+        >
+          Sceller le Parchemin
+        </button>
+      </div>
     </form>
   );
 }

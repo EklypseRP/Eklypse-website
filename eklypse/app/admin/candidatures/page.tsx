@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// ===== CONSTANTES DESIGN (Identiques aux autres pages) =====
+// ===== CONSTANTES DESIGN =====
 const COLORS = {
   purple: '#683892',
   cardBorder: 'rgba(104, 56, 146, 0.3)',
@@ -72,7 +72,8 @@ export default function AdminCandidaturesPage() {
       const res = await fetch('/api/admin/candidatures');
       if (res.ok) {
         const data = await res.json();
-        setCandidatures(data);
+        // On ne garde que les candidatures soumises (pas les brouillons)
+        setCandidatures(data.filter((c: any) => c.status === "en_attente"));
       }
     } catch (err) {
       console.error("Erreur de rafraîchissement:", err);
@@ -117,7 +118,7 @@ export default function AdminCandidaturesPage() {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: '8rem 1.5rem 4rem' // Augmenté pour éviter le header
+      padding: '8rem 1.5rem 4rem'
     }}>
       <style dangerouslySetInnerHTML={{ __html: FADE_IN_ANIMATION }} />
 
@@ -127,7 +128,6 @@ export default function AdminCandidaturesPage() {
         animation: 'smoothFadeIn 0.8s ease-in-out forwards' 
       }}>
         
-        {/* En-tête du Dashboard */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
           <div className="text-center md:text-left">
             <h2 
@@ -151,7 +151,6 @@ export default function AdminCandidaturesPage() {
           </div>
         </div>
 
-        {/* Grille des candidatures */}
         <div className="grid gap-8">
           {candidatures.map((c: any) => (
             <div 
@@ -169,22 +168,37 @@ export default function AdminCandidaturesPage() {
                     {c.rpName ? c.rpName.substring(0, 2).toUpperCase() : '??'}
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-white uppercase italic tracking-tight">{c.rpName}</h3>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-2xl font-bold text-white uppercase italic tracking-tight">{c.rpName}</h3>
+                      <span className="bg-white/10 px-2 py-1 rounded text-[10px] text-neutral-400 font-bold">{c.age} ans</span>
+                    </div>
                     <p className="text-[10px] text-neutral-500 font-mono tracking-widest mt-1">DISCORD: {c.discordId || "NON_LIE"}</p>
                   </div>
                 </div>
                 
-                <div className="bg-black/20 px-4 py-2 rounded-xl border border-white/5 text-right">
-                  <span className="block text-[10px] text-neutral-600 uppercase font-black tracking-widest mb-1">Date de réception</span>
-                  <span className="text-sm text-neutral-400 font-bold tracking-wide">{new Date(c.submittedAt).toLocaleDateString('fr-FR')}</span>
+                <div className="flex flex-col items-end gap-2">
+                  <div className="bg-black/20 px-4 py-2 rounded-xl border border-white/5 text-right">
+                    <span className="block text-[10px] text-neutral-600 uppercase font-black tracking-widest mb-1">Date de réception</span>
+                    <span className="text-sm text-neutral-400 font-bold tracking-wide">
+                      {c.submittedAt ? new Date(c.submittedAt).toLocaleDateString('fr-FR') : 'Date inconnue'}
+                    </span>
+                  </div>
+                  <span className="text-[9px] bg-[#683892]/30 text-[#CBDBFC] px-3 py-1 rounded-full border border-[#683892]/50 uppercase font-black tracking-tighter">
+                    En attente de review
+                  </span>
                 </div>
               </div>
               
-              <div className="bg-black/30 border border-white/5 p-6 rounded-2xl text-neutral-300 italic text-sm leading-relaxed mb-8 border-l-4 border-l-[#683892] shadow-inner">
-                "{c.motivations}"
+              {/* Conteneur pour le texte riche (HTML) */}
+              <div className="bg-black/30 border border-white/5 p-6 rounded-2xl text-neutral-300 text-sm leading-relaxed mb-8 border-l-4 border-l-[#683892] shadow-inner overflow-hidden">
+                <div 
+                  className="prose prose-invert max-w-none 
+                    prose-p:mb-4 prose-headings:text-white prose-headings:font-bold prose-headings:mt-6 prose-headings:mb-2
+                    prose-strong:text-[#CBDBFC] prose-ul:list-disc prose-ul:ml-4"
+                  dangerouslySetInnerHTML={{ __html: c.motivations }} 
+                />
               </div>
 
-              {/* Boutons (Hauteur augmentée comme CandidatureForm) */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <button className="flex-1 bg-white text-black py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] hover:bg-[#CBDBFC] transition-all duration-300 shadow-lg">
                   Accepter le sujet
@@ -198,7 +212,7 @@ export default function AdminCandidaturesPage() {
 
           {candidatures.length === 0 && (
             <div className="text-center py-32 rounded-xl bg-white/5 border border-dashed border-white/10 rounded-[3rem] backdrop-blur-sm">
-              <p className="text-neutral-600 font-black uppercase tracking-[0.3em] text-xs">Aucune candidature pour le moment</p>
+              <p className="text-neutral-600 font-black uppercase tracking-[0.3em] text-xs">Aucune candidature en attente</p>
             </div>
           )}
         </div>
