@@ -7,7 +7,6 @@ import CandidatureForm from "./CandidatureForm";
 const COLORS = {
   purple: '#683892',
   cardBorder: 'rgba(104, 56, 146, 0.3)',
-  lightText: '#CBDBFC',
   cardBg: 'rgba(50, 27, 70, 0.5)',
   textBlue: 'rgba(203, 219, 252, 0.9)',
 };
@@ -20,7 +19,7 @@ const SCROLL_COLORS = {
 
 const FADE_IN_ANIMATION = `
   @keyframes smoothFadeIn {
-    from { opacity: 0; transform: translateY(4px); }
+    from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
   }
 `;
@@ -65,57 +64,62 @@ export default function CandidatureClient({ user }: { user: any }) {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: '10rem 1rem 4rem'
+      padding: '8rem 1rem 4rem'
     }}>
       <style dangerouslySetInnerHTML={{ __html: FADE_IN_ANIMATION }} />
       
+      {/* WRAPPER GLOBAL ANIMÉ */}
       <div 
-        style={{ 
-          background: COLORS.cardBg,
-          border: `1px solid ${COLORS.cardBorder}`,
-          backdropFilter: 'blur(20px)',
-          animation: 'smoothFadeIn 0.8s ease-in-out forwards'
-        }}
-        className="w-full max-w-4xl p-8 md:p-14 rounded-[3rem] shadow-2xl relative overflow-hidden"
+        style={{ animation: 'smoothFadeIn 0.8s ease-in-out forwards' }}
+        className="w-full max-w-6xl flex flex-col items-center"
       >
-        <header className="mb-14 text-center flex flex-col items-center">
+        {/* HEADER HORS DE LA CARTE (AU DESSUS) */}
+        <header className="mb-10 text-center flex flex-col items-center w-full">
           <h2 
             style={{ 
-              fontSize: 'clamp(2.5rem, 6vw, 5rem)',
+              fontSize: 'clamp(3rem, 8vw, 6rem)',
               fontWeight: 'bold',
-              marginBottom: '2rem',
               color: COLORS.textBlue 
             }}
-            className="tracking-tighter "
+            className="tracking-tighter text-4xl md:text-6xl"
           >
             Candidature
           </h2>
+          <br />
           
-          {/* Badge Discord avec bordure Violette (COLORS.cardBorder) */}
+          {/* Badge Discord repositionné */}
           <div 
             style={{ border: `1px solid ${COLORS.cardBorder}` }}
-            className="group flex items-center gap-6 px-10 py-5 rounded-[2.5rem] bg-white/[0.03] backdrop-blur-md transition-all duration-500 hover:bg-white/[0.07] hover:shadow-[0_0_30px_rgba(104,56,146,0.15)]"
+            className="group flex items-center gap-6 px-8 py-4 rounded-[2rem] bg-white/[0.02] backdrop-blur-md transition-all duration-500 hover:bg-white/[0.05]"
           >
             <div className="relative">
               {user?.image && (
-                <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-[#683892]/40 group-hover:border-[#683892] transition-all duration-300">
-                  <Image src={user.image} alt="Avatar" fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                <div className="relative h-12 w-12 overflow-hidden rounded-full border-2 border-[#683892]/40">
+                  <Image src={user.image} alt="Avatar" fill className="object-cover" />
                 </div>
               )}
-              <div className="absolute bottom-0 right-0 flex h-4 w-4">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-40"></span>
-                <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500 border-[3px] border-[#1c0f26]"></span>
+              <div className="absolute bottom-0 right-0 flex h-3 w-3">
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500 border-2 border-[#1c0f26]"></span>
               </div>
             </div>
-
             <div className="flex flex-col text-left border-l border-white/10 pl-5">
-              <span className="text-[10px] text-neutral-500 uppercase font-black tracking-[0.2em] mb-1 opacity-70">Session Active</span>
-              <p className="text-xl font-bold text-white tracking-tight">{user?.name}</p>
+              <span className="text-[9px] text-neutral-500 uppercase font-black tracking-widest opacity-70">Rédacteur actif</span>
+              <p className="text-lg font-bold text-white tracking-tight">{user?.name}</p>
             </div>
           </div>
         </header>
 
-        <CandidatureForm />
+        {/* CARTE DE FORMULAIRE (MAX LARGEUR) */}
+        <div 
+          style={{ 
+            background: COLORS.cardBg,
+            border: `1px solid ${COLORS.cardBorder}`,
+            backdropFilter: 'blur(20px)',
+          }}
+          className="w-full p-8 md:p-14 rounded-[3.5rem] shadow-2xl relative overflow-hidden"
+        >
+          <CandidatureForm />
+        </div>
       </div>
     </div>
   );

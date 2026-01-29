@@ -46,11 +46,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    const { id, rpName, age, lore, isFinalSubmit } = await req.json();
+    const { id, rpName, age, lore, isFinalSubmit, skinUrl } = await req.json();
 
+    // --- SÉCURITÉS & VALIDATIONS ---
+    const cleanRpName = String(rpName).replace(/[0-9]/g, '').trim();
     const numericAge = parseInt(age);
-    if (isNaN(numericAge) || numericAge < 16) {
-      return NextResponse.json({ error: "Âge invalide (Min. 16 ans)." }, { status: 400 });
+    
+    if (isFinalSubmit) {
+      if (cleanRpName.length < 2) {
+        return NextResponse.json({ error: "Nom RP invalide." }, { status: 400 });
+      }
+      if (isNaN(numericAge) || numericAge < 16) {
+        return NextResponse.json({ error: "Âge invalide (Min. 16 ans)." }, { status: 400 });
+      }
+      // Vérification Lore vide (on vérifie si l'objet lore existe et n'est pas juste un paragraphe vide)
+      if (!lore || (lore.content && lore.content.length === 0)) {
+        return NextResponse.json({ error: "Le récit ne peut pas être vide." }, { status: 400 });
+      }
     }
 
     const client = await clientPromise;
@@ -64,19 +76,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Profil Discord non lié." }, { status: 400 });
     }
 
-    // --- CORRECTION DE L'ERREUR TYPESCRIPT ICI ---
-    // On construit le filtre dynamiquement pour éviter le "null" dans $ne
+    // Vérification des candidatures en attente
     const searchFilter: any = { 
       discordId: userInDb.discordId,
       status: "en_attente"
     };
-
     if (id) {
       searchFilter._id = { $ne: new ObjectId(id) };
     }
-
     const pendingCandid = await db.collection("candid").findOne(searchFilter);
-    // ----------------------------------------------
 
     if (isFinalSubmit && pendingCandid) {
       return NextResponse.json(
@@ -85,10 +93,12 @@ export async function POST(req: Request) {
       );
     }
 
+    // --- PRÉPARATION DU DOCUMENT ---
     const candidDocument: any = {
-      rpName: String(rpName).substring(0, 100),
+      rpName: cleanRpName.substring(0, 100),
       age: numericAge,
       lore: lore, 
+      skinUrl: skinUrl || null,
       userEmail: session.user.email,
       userName: session.user.name,
       userImage: session.user.image,
@@ -99,11 +109,26 @@ export async function POST(req: Request) {
 
     if (isFinalSubmit) {
       candidDocument.submittedAt = new Date();
+      
+      // LOGIQUE : Récupérer l'ancien motif si on modifie une candidature refusée
+      if (id) {
+        const existingCandid = await db.collection("candid").findOne({ 
+          _id: new ObjectId(id),
+          discordId: userInDb.discordId 
+        });
+
+        if (existingCandid && existingCandid.status === "refuse") {
+          // On archive l'ancien motif dans 'lastRefusalReason'
+          candidDocument.lastRefusalReason = existingCandid.refusalReason;
+        }
+      }
+
       candidDocument.refusalReason = null; 
       candidDocument.reviewedByName = null; 
       candidDocument.reviewedAt = null;
     }
 
+    // --- ENREGISTREMENT ---
     if (id) {
       await db.collection("candid").updateOne(
         { _id: new ObjectId(id), discordId: userInDb.discordId },
