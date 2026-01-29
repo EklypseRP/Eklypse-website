@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TextStyle } from '@tiptap/extension-text-style';
-import Underline from '@tiptap/extension-underline'; // NOUVEAU
+import Underline from '@tiptap/extension-underline';
 // @ts-ignore
 import { FontSize } from 'tiptap-extension-font-size';
 // @ts-ignore
@@ -14,10 +14,16 @@ import debounce from 'lodash.debounce';
 const EDITOR_STYLES = `
   .tiptap-editor strong { font-weight: bold !important; color: white; }
   .tiptap-editor em { font-style: italic !important; }
-  .tiptap-editor u { text-decoration: underline !important; } /* NOUVEAU */
+  .tiptap-editor u { text-decoration: underline !important; }
   .tiptap-editor h2 { font-size: 1.5rem !important; font-weight: bold !important; margin-top: 1.5rem !important; color: #CBDBFC; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; }
   .tiptap-editor ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin-bottom: 1rem !important; }
   .tiptap-editor p { margin-bottom: 1rem; }
+
+  /* Personnalisation de la barre de défilement interne */
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(104, 56, 146, 0.3); border-radius: 10px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(104, 56, 146, 0.6); }
 
   input:-webkit-autofill,
   input:-webkit-autofill:hover, 
@@ -47,7 +53,7 @@ const ToolbarButton = ({ onClick, isActive, children, title }: { onClick: () => 
 const MenuBar = ({ editor }: { editor: any }) => {
   if (!editor) return null;
   return (
-    <div className="flex items-center justify-center flex-wrap gap-4 p-5 bg-black/40 border-b border-white/10 w-full font-sans">
+    <div className="sticky top-0 z-[40] flex items-center justify-center flex-wrap gap-4 p-5 bg-[#0e0816] border-b border-white/10 w-full font-sans shadow-xl rounded-t-[2.5rem]">
       <div className="flex gap-2 pr-4 border-r border-white/10">
         <ToolbarButton title="Gras" onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')}>
           <span className="font-black text-lg">B</span>
@@ -55,7 +61,6 @@ const MenuBar = ({ editor }: { editor: any }) => {
         <ToolbarButton title="Italique" onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')}>
           <span className="italic font-serif text-lg">I</span>
         </ToolbarButton>
-        {/* NOUVEAU BOUTON SOULIGNÉ */}
         <ToolbarButton title="Souligné" onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')}>
           <span className="underline font-serif text-lg">U</span>
         </ToolbarButton>
@@ -152,17 +157,11 @@ export default function CandidatureForm() {
   );
 
   const editor = useEditor({
-    extensions: [
-      StarterKit, 
-      TextStyle, 
-      FontSize, 
-      lineHeight, 
-      Underline // NOUVEAU
-    ],
+    extensions: [StarterKit, TextStyle, FontSize, lineHeight, Underline],
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        class: 'tiptap-editor focus:outline-none min-h-[400px] p-10 text-white prose prose-invert max-w-none text-base outline-none',
+        class: 'tiptap-editor focus:outline-none p-10 text-white prose prose-invert max-w-none text-base outline-none',
       },
     },
     onUpdate: ({ editor }) => {
@@ -253,6 +252,7 @@ export default function CandidatureForm() {
     </div>
   );
 
+  // --- VUE 1 : ESPACE CITOYEN ---
   if (view === 'history') {
     return (
       <div className="max-w-4xl mx-auto space-y-16 animate-in fade-in duration-700">
@@ -298,7 +298,7 @@ export default function CandidatureForm() {
           <h3 className="text-[10px] font-black uppercase tracking-[0.5em] text-neutral-600 ml-4 italic border-l border-[#683892] pl-4">Archives du Codex</h3>
           {history.length === 0 ? (
             <div className="p-16 border border-dashed border-white/5 rounded-[3rem] text-center opacity-30">
-              <p className="text-xs font-black uppercase tracking-widest text-white">Aucune trace de vous dans les archives</p>
+              <p className="text-xs font-black uppercase tracking-widest text-white">Aucune trace de vous dans le Codex</p>
             </div>
           ) : (
             history.map((c) => (
@@ -339,6 +339,7 @@ export default function CandidatureForm() {
     );
   }
 
+  // --- VUE 2 : ÉCRANS DE STATUT ---
   if (status === 'en_attente' || status === 'accepte' || status === 'refuse') {
     return (
       <div className="max-w-4xl mx-auto py-16 animate-in fade-in duration-1000 font-sans text-center">
@@ -391,6 +392,7 @@ export default function CandidatureForm() {
     );
   }
 
+  // --- VUE 3 : FORMULAIRE ---
   const inputClassName = "w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#683892] focus:bg-white/[0.05] focus:ring-4 focus:ring-[#683892]/10 transition-all duration-300 font-sans";
 
   return (
@@ -429,11 +431,15 @@ export default function CandidatureForm() {
 
         <div className="space-y-4">
           <label className="block text-base font-black text-neutral-500 uppercase tracking-[0.2em] mb-4 ml-1">Récit & Lore</label>
-          <div className="group relative border border-white/10 rounded-[2.5rem] bg-white/[0.02] overflow-hidden focus-within:border-[#683892] transition-all shadow-3xl">
+          
+          {/* STRUCTURE FIXE AVEC SCROLL INTERNE */}
+          <div className="group relative h-[650px] flex flex-col border border-white/10 rounded-[2.5rem] bg-white/[0.02] focus-within:border-[#683892] transition-all shadow-3xl overflow-hidden">
             <MenuBar editor={editor} />
-            <EditorContent editor={editor} />
-            <div className="absolute bottom-0 left-0 h-[3px] w-0 bg-[#683892] group-focus-within:w-full transition-all duration-1000" />
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+               <EditorContent editor={editor} />
+            </div>
           </div>
+
           <div className="flex justify-end px-4 mt-2">
             <div className="flex items-center gap-2">
               <div className={`h-1.5 w-1.5 rounded-full ${saveStatus === 'saving' ? 'bg-amber-500 animate-pulse' : saveStatus === 'saved' ? 'bg-blue-400' : 'bg-neutral-700'}`} />
