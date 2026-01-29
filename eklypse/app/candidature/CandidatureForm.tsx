@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TextStyle } from '@tiptap/extension-text-style';
+import Underline from '@tiptap/extension-underline'; // NOUVEAU
 // @ts-ignore
 import { FontSize } from 'tiptap-extension-font-size';
 // @ts-ignore
@@ -13,6 +14,7 @@ import debounce from 'lodash.debounce';
 const EDITOR_STYLES = `
   .tiptap-editor strong { font-weight: bold !important; color: white; }
   .tiptap-editor em { font-style: italic !important; }
+  .tiptap-editor u { text-decoration: underline !important; } /* NOUVEAU */
   .tiptap-editor h2 { font-size: 1.5rem !important; font-weight: bold !important; margin-top: 1.5rem !important; color: #CBDBFC; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; }
   .tiptap-editor ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin-bottom: 1rem !important; }
   .tiptap-editor p { margin-bottom: 1rem; }
@@ -52,6 +54,10 @@ const MenuBar = ({ editor }: { editor: any }) => {
         </ToolbarButton>
         <ToolbarButton title="Italique" onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')}>
           <span className="italic font-serif text-lg">I</span>
+        </ToolbarButton>
+        {/* NOUVEAU BOUTON SOULIGNÉ */}
+        <ToolbarButton title="Souligné" onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')}>
+          <span className="underline font-serif text-lg">U</span>
         </ToolbarButton>
       </div>
 
@@ -146,7 +152,13 @@ export default function CandidatureForm() {
   );
 
   const editor = useEditor({
-    extensions: [StarterKit, TextStyle, FontSize, lineHeight],
+    extensions: [
+      StarterKit, 
+      TextStyle, 
+      FontSize, 
+      lineHeight, 
+      Underline // NOUVEAU
+    ],
     immediatelyRender: false,
     editorProps: {
       attributes: {
@@ -241,7 +253,6 @@ export default function CandidatureForm() {
     </div>
   );
 
-  // --- VUE 1 : ESPACE CITOYEN ---
   if (view === 'history') {
     return (
       <div className="max-w-4xl mx-auto space-y-16 animate-in fade-in duration-700">
@@ -328,7 +339,6 @@ export default function CandidatureForm() {
     );
   }
 
-  // --- VUE 2 : ÉCRANS DE STATUT ---
   if (status === 'en_attente' || status === 'accepte' || status === 'refuse') {
     return (
       <div className="max-w-4xl mx-auto py-16 animate-in fade-in duration-1000 font-sans text-center">
@@ -381,13 +391,11 @@ export default function CandidatureForm() {
     );
   }
 
-  // --- VUE 3 : FORMULAIRE ---
   const inputClassName = "w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#683892] focus:bg-white/[0.05] focus:ring-4 focus:ring-[#683892]/10 transition-all duration-300 font-sans";
 
   return (
     <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in duration-700">
       
-      {/* ALIGNEMENT BADGE + BOUTON ANNULER */}
       <div className="flex justify-between items-center px-2">
         <button 
           onClick={() => setView('history')} 

@@ -166,7 +166,7 @@ export default function AdminCandidaturesPage() {
       <main className="w-full max-w-6xl">
         <header className="flex flex-col items-center mb-16">
           <div className="relative pb-6 text-center group">
-            <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-[rgba(203,219,252,0.9)] uppercase italic">
+            <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-[rgba(203,219,252,0.9)]">
               {view === 'overview' ? 'Gestion des Candidatures' : `Candidature de ${currentFolder?.discordName}`}
             </h1>
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-full bg-gradient-to-r from-transparent via-[#683892] to-transparent shadow-[0_0_10px_#683892]" />
@@ -178,7 +178,7 @@ export default function AdminCandidaturesPage() {
               className="mt-8 group relative py-2 flex flex-col items-center transition-transform hover:scale-105"
             >
               <span className="text-neutral-500 uppercase font-black text-[10px] tracking-[0.4em] group-hover:text-white transition-colors">
-                ← Retour au Codex
+                ← Retour aux archives
               </span>
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-0 bg-gradient-to-r from-transparent via-[#683892] to-transparent transition-all duration-300 group-hover:w-full" />
             </button>
@@ -187,7 +187,7 @@ export default function AdminCandidaturesPage() {
 
         {allCandidatures.length === 0 ? (
           <div className="text-center py-40 rounded-[4rem] bg-white/[0.02] border border-dashed border-white/10 opacity-50">
-            <p className="text-neutral-600 font-black uppercase tracking-[0.5em] text-xs">Le Codex est vide</p>
+            <p className="text-neutral-600 font-black uppercase tracking-[0.5em] text-xs">Les archives sont vide</p>
           </div>
         ) : (
           view === 'overview' ? (
