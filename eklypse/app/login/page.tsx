@@ -98,7 +98,7 @@ export default function LoginPage() {
           }}
         >
           {/* Titre avec la couleur demandée */}
-          <h1 className="text-4xl font-bold mb-4  tracking-[0.2em]" 
+          <h1 className="text-4xl font-bold mb-4" 
               style={{ color: 'rgba(203, 219, 252, 0.9)' }}>
             Espace Membre
           </h1>

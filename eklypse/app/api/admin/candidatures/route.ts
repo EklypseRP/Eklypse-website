@@ -1,39 +1,42 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth"; 
 
 export async function GET() {
   try {
-    // 1. Récupérer la session de l'utilisateur qui fait la requête
-    const session: any = await getServerSession();
+    // 1. RÉCUPÉRATION DE LA SESSION AVEC LA CONFIG CENTRALISÉE
+    const session: any = await getServerSession(authOptions);
 
-    // 2. Sécurité : Vérifier si l'utilisateur est connecté ET s'il est recruteur/admin
-    if (!session || !session.user || !session.user.isRecruiter) {
-      return NextResponse.json(
-        { error: "Accès refusé. Droits de recruteur requis." },
-        { status: 401 }
-      );
+    // 2. VÉRIFICATION DES PERMISSIONS
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    // 3. Connexion à la base de données
-    const client = await clientPromise;
-    const db = client.db("Eklypse");
+    // On vérifie le rôle de recruteur (synchronisé avec les rôles Discord)
+    if (!session.user.isRecruiter) {
+      return NextResponse.json({ error: "Permissions insuffisantes" }, { status: 403 });
+    }
 
-    // 4. Récupération des candidatures
-    // On les trie par 'submittedAt' en descendant (-1) pour avoir les plus récentes en haut
+    // 3. CONNEXION À LA BASE DE DONNÉES
+    const client = await clientPromise;
+    const db = client.db("Eklypse"); 
+
+    // 4. RÉCUPÉRATION DES DONNÉES
+    // Récupère les documents avec les champs discordId, email, et lore
     const candidatures = await db
       .collection("candid")
       .find({})
-      .sort({ submittedAt: -1 }) 
+      .sort({ submittedAt: -1, updatedAt: -1 }) 
       .toArray();
 
-    // 5. Retourner les données en JSON
+    // 5. RÉPONSE
     return NextResponse.json(candidatures);
 
   } catch (error) {
-    console.error("Erreur API Admin Candidatures:", error);
+    console.error("[API_ADMIN_CANDIDATURES_GET] :", error);
     return NextResponse.json(
-      { error: "Une erreur est survenue lors de la récupération des données." },
+      { error: "Erreur technique lors de la récupération du Codex." }, 
       { status: 500 }
     );
   }
