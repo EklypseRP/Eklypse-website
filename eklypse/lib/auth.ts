@@ -1,6 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import DiscordProvider from "next-auth/providers/discord";
-import { getDb } from "@/lib/mongodb"; // On importe la nouvelle fonction
+import clientPromise from "@/lib/mongodb";
 
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const ROLE_MEMBER = "1462127752818856210";
@@ -30,9 +30,12 @@ export const authOptions: NextAuthOptions = {
 
         if (!roles.includes(ROLE_MEMBER)) return "/unauthorized";
 
-        // APPEL DYNAMIQUE : On récupère la DB configurée
-        const db = await getDb();
+        // Synchronisation avec MongoDB
+        const client = await clientPromise;
         
+        // Base de données "Website" hardcodée
+        const db = client.db("Website");
+
         await db.collection("users").updateOne(
           { email: user.email },
           { 
