@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     }
 
     const client = await clientPromise;
-    const db = client.db("Eklypse");
+    const db = client.db("Website");
 
     // 2. MISE À JOUR DE LA CANDIDATURE
     // On utilise session.user.name qui contient le pseudo Discord (ex: capu0410)

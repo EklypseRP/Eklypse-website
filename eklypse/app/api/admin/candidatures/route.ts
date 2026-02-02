@@ -20,7 +20,7 @@ export async function GET() {
 
     // 3. CONNEXION À LA BASE DE DONNÉES
     const client = await clientPromise;
-    const db = client.db("Eklypse"); 
+    const db = client.db("Website"); 
 
     // 4. RÉCUPÉRATION DES DONNÉES
     // Récupère les documents avec les champs discordId, email, et lore

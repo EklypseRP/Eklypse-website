@@ -19,12 +19,4 @@ if (process.env.NODE_ENV === 'development') {
   clientPromise = client.connect();
 }
 
-/**
- * Retourne la base de données "Website"
- */
-export async function getDb() {
-  const client = await clientPromise;
-  return client.db("Website");
-}
-
 export default clientPromise;

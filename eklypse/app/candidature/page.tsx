@@ -16,7 +16,7 @@ export default async function CandidaturePage() {
 
   // 2. Vérification DB (C'est ça qui manquait pour le kick immédiat)
   const client = await clientPromise;
-  const db = client.db("Eklypse");
+  const db = client.db("Website");
   const userInDb = await db.collection("users").findOne({ 
     email: session.user.email 
   });

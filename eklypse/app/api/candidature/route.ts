@@ -13,7 +13,7 @@ export async function GET() {
     }
 
     const client = await clientPromise;
-    const db = client.db("Eklypse");
+    const db = client.db("Website");
     
     const userInDb = await db.collection("users").findOne({ 
       email: session.user.email 
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     }
 
     const client = await clientPromise;
-    const db = client.db("Eklypse");
+    const db = client.db("Website");
 
     const userInDb = await db.collection("users").findOne({ 
       email: session.user.email 

@@ -32,18 +32,15 @@ export const authOptions: NextAuthOptions = {
 
         // Synchronisation avec MongoDB
         const client = await clientPromise;
-        
-        // Base de données "Website" hardcodée
         const db = client.db("Website");
-
         await db.collection("users").updateOne(
-          { email: user.email },
+          { email: user.email }, //
           { 
             $set: { 
-              discordId: profile.id,
-              name: user.name,
-              image: user.image,
-              lastLogin: new Date()
+              discordId: profile.id, //
+              name: user.name, //
+              image: user.image, //
+              lastLogin: new Date() //
             } 
           },
           { upsert: true }
