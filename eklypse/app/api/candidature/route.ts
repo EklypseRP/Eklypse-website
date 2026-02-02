@@ -46,7 +46,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    const { id, rpName, age, lore, isFinalSubmit, skinUrl } = await req.json();
+    // RÉCUPÉRATION DES NOUVEAUX CHAMPS : physique, mental, mcPseudo
+    const { id, rpName, age, lore, physique, mental, mcPseudo, isFinalSubmit, skinUrl } = await req.json();
 
     // --- SÉCURITÉS & VALIDATIONS ---
     const cleanRpName = String(rpName).replace(/[0-9]/g, '').trim();
@@ -56,10 +57,21 @@ export async function POST(req: Request) {
       if (cleanRpName.length < 2) {
         return NextResponse.json({ error: "Nom RP invalide." }, { status: 400 });
       }
-      if (isNaN(numericAge) || numericAge < 16) {
-        return NextResponse.json({ error: "Âge invalide (Min. 16 ans)." }, { status: 400 });
+      // MISE À JOUR SÉCURITÉ : 18 ANS MINIMUM
+      if (isNaN(numericAge) || numericAge < 18) {
+        return NextResponse.json({ error: "Âge invalide (Min. 18 ans)." }, { status: 400 });
       }
-      // Vérification Lore vide (on vérifie si l'objet lore existe et n'est pas juste un paragraphe vide)
+      // VÉRIFICATION DES NOUVELLES ZONES SI VIDE
+      if (!physique || physique.trim().length === 0) {
+        return NextResponse.json({ error: "La description physique est obligatoire." }, { status: 400 });
+      }
+      if (!mental || mental.trim().length === 0) {
+        return NextResponse.json({ error: "La description mentale est obligatoire." }, { status: 400 });
+      }
+      if (!mcPseudo || mcPseudo.trim().length === 0) {
+        return NextResponse.json({ error: "Le pseudo Minecraft est obligatoire." }, { status: 400 });
+      }
+      // Vérification Lore TipTap
       if (!lore || (lore.content && lore.content.length === 0)) {
         return NextResponse.json({ error: "Le récit ne peut pas être vide." }, { status: 400 });
       }
@@ -94,10 +106,14 @@ export async function POST(req: Request) {
     }
 
     // --- PRÉPARATION DU DOCUMENT ---
+    // On inclut physique, mental et mcPseudo dans le document envoyé à la DB
     const candidDocument: any = {
       rpName: cleanRpName.substring(0, 100),
       age: numericAge,
       lore: lore, 
+      physique: physique || "",
+      mental: mental || "",
+      mcPseudo: mcPseudo || "",
       skinUrl: skinUrl || null,
       userEmail: session.user.email,
       userName: session.user.name,
@@ -118,7 +134,6 @@ export async function POST(req: Request) {
         });
 
         if (existingCandid && existingCandid.status === "refuse") {
-          // On archive l'ancien motif dans 'lastRefusalReason'
           candidDocument.lastRefusalReason = existingCandid.refusalReason;
         }
       }
@@ -138,6 +153,7 @@ export async function POST(req: Request) {
       if (isFinalSubmit) {
         await db.collection("candid").insertOne(candidDocument);
       } else {
+        // Pour les brouillons
         await db.collection("candid").updateOne(
           { discordId: userInDb.discordId, status: "brouillon" },
           { $set: candidDocument },

@@ -12,7 +12,6 @@ import { FontSize } from 'tiptap-extension-font-size';
 import { lineHeight } from 'tiptap-extension-line-height';
 import debounce from 'lodash.debounce';
 
-// ===== ANIMATION D'ENTRÉE =====
 const FADE_IN_ANIMATION = `
   @keyframes smoothFadeIn {
     from { opacity: 0; transform: translateY(10px); }
@@ -20,7 +19,6 @@ const FADE_IN_ANIMATION = `
   }
 `;
 
-// ===== COMPOSANT ANALYSE DIMENSIONS =====
 const SkinDimensions = ({ url }: { url: string | null | undefined }) => {
   const [dims, setDims] = useState<string | null>(null);
   useEffect(() => {
@@ -70,12 +68,6 @@ const MenuBar = ({ editor }: { editor: any }) => {
             <option value="16px">16px</option><option value="14px">14px</option><option value="18px">18px</option><option value="22px">22px</option>
           </select>
         </div>
-        <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase font-bold text-neutral-600 ml-1">Espace</span>
-          <select className="bg-white/5 border border-white/10 text-[12px] text-neutral-400 rounded-lg px-2 py-1 outline-none cursor-pointer" onChange={(e) => editor.chain().focus().setLineHeight(e.target.value).run()}>
-            <option value="1.5">1.5</option><option value="1.2">1.2</option><option value="1.8">1.8</option>
-          </select>
-        </div>
       </div>
       <div className="flex gap-2 pl-2">
         <ToolbarButton title="Titre" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })}><span className="text-[10px] uppercase font-black">Titre</span></ToolbarButton>
@@ -93,7 +85,7 @@ export default function CandidatureForm() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [currentRefusalReason, setCurrentRefusalReason] = useState<string | null>(null);
   
-  const [formData, setFormData] = useState({ rpName: '', age: '', skinUrl: '' });
+  const [formData, setFormData] = useState({ rpName: '', age: '', physique: '', mental: '', mcPseudo: '', skinUrl: '' });
   const [skinPreview, setSkinPreview] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -134,9 +126,29 @@ export default function CandidatureForm() {
     }
   });
 
+  const checkImageDimensions = (file: File): Promise<{width: number, height: number}> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const img = new window.Image();
+        img.onload = () => resolve({ width: img.width, height: img.height });
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const dims = await checkImageDimensions(file);
+    if (dims.width > 512 || dims.height > 512) {
+      alert(`Format invalide : Votre image fait ${dims.width}x${dims.height}. Le format maximum autorisé est 512x512 pixels.`);
+      e.target.value = ''; 
+      return;
+    }
+
     const localUrl = URL.createObjectURL(file);
     setSkinPreview(localUrl);
     setIsUploading(true);
@@ -156,7 +168,14 @@ export default function CandidatureForm() {
   const handleEditApplication = (c: any) => {
     setEditingId(c._id);
     setCurrentRefusalReason(c.refusalReason || null);
-    setFormData({ rpName: c.rpName || '', age: c.age?.toString() || '', skinUrl: c.skinUrl || '' });
+    setFormData({ 
+      rpName: c.rpName || '', 
+      age: c.age?.toString() || '', 
+      physique: c.physique || '',
+      mental: c.mental || '',
+      mcPseudo: c.mcPseudo || '',
+      skinUrl: c.skinUrl || '' 
+    });
     setSkinPreview(c.skinUrl || null);
     if (editor) editor.commands.setContent(c.lore || '');
     setView('form');
@@ -166,7 +185,14 @@ export default function CandidatureForm() {
     if (!draft) return;
     setEditingId(null);
     setCurrentRefusalReason(null);
-    setFormData({ rpName: draft.rpName || '', age: draft.age || '', skinUrl: draft.skinUrl || '' });
+    setFormData({ 
+      rpName: draft.rpName || '', 
+      age: draft.age || '', 
+      physique: draft.physique || '',
+      mental: draft.mental || '',
+      mcPseudo: draft.mcPseudo || '',
+      skinUrl: draft.skinUrl || '' 
+    });
     setSkinPreview(draft.skinUrl || null);
     if (editor) editor.commands.setContent(draft.lore || '');
     setView('form');
@@ -180,7 +206,7 @@ export default function CandidatureForm() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     let finalValue = value;
     if (name === 'age') finalValue = value.replace(/[^0-9]/g, '');
@@ -194,9 +220,14 @@ export default function CandidatureForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editor || loading) return;
-    if (parseInt(formData.age) < 16) return alert("Âge minimum : 16 ans.");
-    if (editor.getText().trim().length === 0) return alert("Lore vide.");
-    if (!formData.skinUrl) return alert("Skin obligatoire.");
+    
+    // VALIDATIONS STRICTES
+    if (parseInt(formData.age) < 18) return alert("Âge minimum requis : 18 ans.");
+    if (!formData.physique.trim()) return alert("La description physique est obligatoire.");
+    if (!formData.mental.trim()) return alert("La description mentale est obligatoire.");
+    if (editor.getText().trim().length === 0) return alert("Le récit (Lore) ne peut pas être vide.");
+    if (!formData.skinUrl) return alert("L'apparence physique (Skin) est obligatoire.");
+    if (!formData.mcPseudo) return alert("Le pseudo Minecraft est requis.");
 
     setLoading(true);
     try {
@@ -215,9 +246,8 @@ export default function CandidatureForm() {
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 
-  if (loading) return <div className="text-center py-40 animate-pulse font-black uppercase text-xs text-neutral-500 tracking-[0.5em]">Consultation des archives...</div>;
+  if (loading) return <div className="text-center py-40 animate-pulse font-black uppercase text-xs text-neutral-500 tracking-[0.5em]">Consultation du Codex...</div>;
 
-  // --- WRAPPER ANIMÉ POUR TOUT LE COMPOSANT ---
   return (
     <div 
       key={view + (editingId || 'new') + (selectedCandid?._id || 'none')} 
@@ -226,7 +256,6 @@ export default function CandidatureForm() {
     >
       <style dangerouslySetInnerHTML={{ __html: FADE_IN_ANIMATION + EDITOR_STYLES }} />
 
-      {/* VUE : HISTORIQUE */}
       {view === 'history' && (
         <div className="w-full space-y-16">
           <div className="flex flex-col items-center">
@@ -234,7 +263,7 @@ export default function CandidatureForm() {
               onClick={() => {
                 setEditingId(null);
                 setCurrentRefusalReason(null);
-                setFormData({ rpName: '', age: '', skinUrl: '' });
+                setFormData({ rpName: '', age: '', physique: '', mental: '', mcPseudo: '', skinUrl: '' });
                 setSkinPreview(null);
                 editor?.commands.clearContent();
                 setView('form');
@@ -248,24 +277,6 @@ export default function CandidatureForm() {
               </span>
             </button>
           </div>
-
-          {draft && !history.some(c => c.status === 'en_attente') && (
-            <div className="space-y-6">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.5em] text-amber-500/80 ml-4 italic border-l border-amber-500/30 pl-4 animate-pulse">Brouillon en attente</h3>
-              <div onClick={handleResumeDraft} className="group relative p-8 rounded-[2.5rem] bg-amber-500/[0.02] border border-amber-500/10 hover:border-amber-500/30 transition-all cursor-pointer shadow-xl overflow-hidden">
-                <div className="flex justify-between items-center relative z-10">
-                  <div>
-                    <h4 className="text-2xl font-black text-white uppercase italic tracking-tighter">{draft.rpName || "Récit sans nom"}</h4>
-                    <p className="text-[9px] text-amber-500/60 uppercase font-black tracking-widest mt-1">Dernière modification : {new Date(draft.timestamp).toLocaleString()}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <button onClick={handleDeleteDraft} className="p-3 text-neutral-600 hover:text-red-500 transition-colors uppercase font-black text-[9px]">Supprimer</button>
-                    <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest group-hover:translate-x-1 transition-transform">Reprendre →</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           <div className="space-y-6">
             <h3 className="text-[10px] font-black uppercase tracking-[0.5em] text-neutral-600 ml-4 italic border-l border-[#683892] pl-4">Archives d'Eklypse</h3>
@@ -307,11 +318,10 @@ export default function CandidatureForm() {
         </div>
       )}
 
-      {/* VUE : DÉTAILS */}
       {view === 'details' && selectedCandid && (
         <div className="w-full">
           <div className="flex justify-between items-center mb-10 pb-6 border-b border-white/5">
-              <button onClick={() => setView('history')} className="text-[12px] font-black text-neutral-500 hover:text-white uppercase tracking-[0.4em] transition-colors">← Revenir aux archives</button>
+              <button onClick={() => setView('history')} className="text-[12px] font-black text-neutral-500 hover:text-white uppercase tracking-[0.4em] transition-colors">← Revenir aux Archives</button>
               <div className={`px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest
                   ${selectedCandid.status === 'en_attente' ? 'border-amber-500/30 text-amber-500 bg-amber-500/5' : 
                     selectedCandid.status === 'accepte' ? 'border-green-500/30 text-green-500 bg-green-500/5' : 
@@ -321,6 +331,13 @@ export default function CandidatureForm() {
               </div>
           </div>
 
+          {selectedCandid.status === 'refuse' && selectedCandid.refusalReason && (
+            <div className="mb-8 p-8 bg-red-500/10 border border-red-500/20 rounded-[2.5rem]">
+              <span className="block text-[10px] text-red-500 font-black uppercase tracking-widest mb-3">Motif du rejet :</span>
+              <p className="text-sm text-neutral-200 italic leading-relaxed">"{selectedCandid.refusalReason}"</p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
             <div className="lg:col-span-8 bg-black/30 border border-white/5 p-10 rounded-[2.5rem] shadow-inner">
                  <div className="mb-10 pb-8 border-b border-white/10">
@@ -328,15 +345,32 @@ export default function CandidatureForm() {
                     <h2 className="text-5xl font-black text-white uppercase italic tracking-tighter mt-1">{selectedCandid.rpName}</h2>
                     <span className="inline-block mt-4 px-3 py-1 bg-[#683892]/20 border border-[#683892]/40 rounded-lg text-sm font-black text-[#CBDBFC] uppercase">{selectedCandid.age} ans</span>
                  </div>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                    <div className="space-y-3">
+                       <span className="text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">Description Physique</span>
+                       <p className="text-sm text-[#CBDBFC]/80 leading-relaxed italic border-l border-[#683892]/30 pl-4">{selectedCandid.physique}</p>
+                    </div>
+                    <div className="space-y-3">
+                       <span className="text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">Description Mentale</span>
+                       <p className="text-sm text-[#CBDBFC]/80 leading-relaxed italic border-l border-[#683892]/30 pl-4">{selectedCandid.mental}</p>
+                    </div>
+                 </div>
+
                  <div className="mb-6 opacity-30 text-[10px] font-black uppercase tracking-[0.4em] text-white">Récit & Lore</div>
                  <div className="max-h-[600px] overflow-y-auto custom-scrollbar pr-4">
                     <EditorContent editor={editor} className="tiptap-editor-readonly pointer-events-none" />
                  </div>
             </div>
+
             <div className="lg:col-span-4 flex flex-col items-center gap-6 sticky top-10">
-               <div className="flex flex-col items-center">
-                  <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.4em] mb-8">Skin 3D</span>
+               <div className="flex flex-col items-center gap-4">
+                  <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.4em]">Skin 3D</span>
                   <SkinViewer3D skinUrl={selectedCandid.skinUrl} width={260} height={380} />
+                  <div className="mt-4 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-center w-full">
+                     <span className="block text-[8px] text-neutral-500 uppercase font-black tracking-widest mb-1">Pseudo Minecraft</span>
+                     <span className="text-sm font-bold text-[#CBDBFC] tracking-tight">{selectedCandid.mcPseudo || "Inconnu"}</span>
+                  </div>
                   <SkinDimensions url={selectedCandid.skinUrl} />
                </div>
                {selectedCandid.status === 'refuse' && (
@@ -349,11 +383,10 @@ export default function CandidatureForm() {
         </div>
       )}
 
-      {/* VUE : FORMULAIRE */}
       {view === 'form' && (
         <div className="w-full">
           <div className="flex justify-between items-center px-2 mb-10">
-            <button onClick={() => setView('history')} className="text-[12px] font-black text-neutral-500 hover:text-white uppercase tracking-[0.4em] transition-colors">← Abandonner</button>
+            <button onClick={() => setView('history')} className="text-[12px] font-black text-neutral-600 hover:text-white uppercase tracking-[0.4em] transition-colors">← Abandonner</button>
             <div className="flex items-center gap-3">
               <div className={`h-1.5 w-1.5 rounded-full ${saveStatus === 'saving' ? 'bg-amber-500 animate-pulse' : saveStatus === 'saved' ? 'bg-green-500' : 'bg-neutral-700'}`} />
               <span className="text-[9px] font-black uppercase text-neutral-500">{saveStatus === 'saving' ? 'Sauvegarde...' : saveStatus === 'saved' ? 'Brouillon à jour' : 'Prêt'}</span>
@@ -373,25 +406,35 @@ export default function CandidatureForm() {
             
             <div className="max-w-xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-2"><label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">Identité RP</label><input name="rpName" value={formData.rpName} onChange={handleInputChange} required placeholder="Nom du Citoyen" className="w-full p-6 bg-white/[0.03] border border-white/10 rounded-[1.5rem] text-white focus:border-[#683892] outline-none transition-all" /></div>
-              <div className="space-y-2"><label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">Âge (Min. 16)</label><input name="age" type="text" value={formData.age} onChange={handleInputChange} required placeholder="16" className="w-full p-6 bg-white/[0.03] border border-white/10 rounded-[1.5rem] text-white focus:border-[#683892] outline-none transition-all" /></div>
+              <div className="space-y-2"><label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">Âge (Min. 18)</label><input name="age" type="text" value={formData.age} onChange={handleInputChange} required placeholder="18" className="w-full p-6 bg-white/[0.03] border border-white/10 rounded-[1.5rem] text-white focus:border-[#683892] outline-none transition-all" /></div>
+            </div>
+
+            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="space-y-2"><label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">Description Physique</label><textarea name="physique" value={formData.physique} onChange={handleInputChange} placeholder="Taille, style..." className="w-full h-32 p-6 bg-white/[0.03] border border-white/10 rounded-[1.5rem] text-white focus:border-[#683892] outline-none transition-all resize-none custom-scrollbar" /></div>
+              <div className="space-y-2"><label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">Description Mentale</label><textarea name="mental" value={formData.mental} onChange={handleInputChange} placeholder="Caractère..." className="w-full h-32 p-6 bg-white/[0.03] border border-white/10 rounded-[1.5rem] text-white focus:border-[#683892] outline-none transition-all resize-none custom-scrollbar" /></div>
             </div>
 
             <div className="space-y-4">
               <label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Récit & Lore</label>
               <div className="group relative h-[650px] flex flex-col border border-white/10 rounded-[2.5rem] bg-white/[0.02] focus-within:border-[#683892] transition-all overflow-hidden shadow-3xl">
-                <MenuBar editor={editor} />
-                <div className="flex-1 overflow-y-auto custom-scrollbar"><EditorContent editor={editor} /></div>
+                <MenuBar editor={editor} /><div className="flex-1 overflow-y-auto custom-scrollbar"><EditorContent editor={editor} /></div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 bg-white/[0.02] p-10 rounded-[3rem] border border-white/5 items-center">
-              <div className="space-y-6">
-                <label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Apparence physique (.png) <span className="text-red-500">*</span></label>
-                <div className="relative group">
-                  <input type="file" accept="image/png" onChange={handleFileChange} className="hidden" id="skin-upload" />
-                  <label htmlFor="skin-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/10 rounded-[2.5rem] cursor-pointer hover:border-[#683892]/50 hover:bg-[#683892]/5 transition-all text-center">
-                    {isUploading ? <span className="animate-pulse text-[10px] font-black uppercase text-[#CBDBFC]">Enregistrement...</span> : <><span className="text-3xl mb-3">👔</span><span className="text-[10px] font-black uppercase text-neutral-500">Charger mon Skin</span></>}
-                  </label>
+              <div className="space-y-8">
+                <div className="space-y-4">
+                   <label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Pseudo Minecraft <span className="text-red-500">*</span></label>
+                   <input name="mcPseudo" value={formData.mcPseudo} onChange={handleInputChange} required placeholder="Ex: Steve_64" className="w-full p-6 bg-black/20 border border-white/10 rounded-2xl text-white focus:border-[#683892] outline-none transition-all" />
+                </div>
+                <div className="space-y-4">
+                  <label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Fichier Apparence (.png - Max 512x512) <span className="text-red-500">*</span></label>
+                  <div className="relative group">
+                    <input type="file" accept="image/png" onChange={handleFileChange} className="hidden" id="skin-upload" />
+                    <label htmlFor="skin-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/10 rounded-[2rem] cursor-pointer hover:border-[#683892]/50 hover:bg-[#683892]/5 transition-all text-center">
+                      {isUploading ? <span className="animate-pulse text-[10px] font-black uppercase text-[#CBDBFC]">Analyse du fichier...</span> : <><span className="text-3xl mb-3">👔</span><span className="text-[10px] font-black uppercase text-neutral-500">Charger mon Skin</span></>}
+                    </label>
+                  </div>
                 </div>
               </div>
               <div className="flex flex-col items-center gap-4">

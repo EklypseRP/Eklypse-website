@@ -144,11 +144,11 @@ export default function AdminCandidaturesPage() {
     });
   }, [allCandidatures]);
 
-  const recentCandidatures = useMemo(() => {
+  // --- MODIFICATION : Affiche TOUTES les candidatures en attente ---
+  const pendingCandidatures = useMemo(() => {
     return [...allCandidatures]
       .filter(c => c.status === 'en_attente')
-      .sort((a, b) => new Date(b.submittedAt || b.updatedAt).getTime() - new Date(a.submittedAt || a.updatedAt).getTime())
-      .slice(0, 5);
+      .sort((a, b) => new Date(b.submittedAt || b.updatedAt).getTime() - new Date(a.submittedAt || a.updatedAt).getTime());
   }, [allCandidatures]);
 
   const currentFolder = useMemo(() => 
@@ -167,7 +167,7 @@ export default function AdminCandidaturesPage() {
     <div className="min-h-screen bg-[#0a0612] relative overflow-x-hidden font-sans">
       <style dangerouslySetInnerHTML={{ __html: DASHBOARD_ANIMATIONS }} />
       
-      {/* BACKGROUND ANIMÉ (IDENTIQUE PAGE PRINCIPALE) */}
+      {/* BACKGROUND ANIMÉ */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div 
           className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] rounded-full bg-[#683892]/20 blur-[120px]" 
@@ -228,14 +228,14 @@ export default function AdminCandidaturesPage() {
 
         {view === 'overview' ? (
           <div className="space-y-24 w-full">
-            {/* RÉCENTS (Dernières candidatures envoyées) */}
+            {/* TOUTES LES CANDIDATURES EN ATTENTE */}
             <section>
               <div className="flex items-center gap-4 mb-8 ml-4">
                 <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                <h2 className="text-xs font-black uppercase tracking-[0.4em] text-neutral-500 italic">Derniers Arrivages (À traiter)</h2>
+                <h2 className="text-xs font-black uppercase tracking-[0.4em] text-neutral-500 italic">Candidatures à traiter ({pendingCandidatures.length})</h2>
               </div>
               <div className="grid gap-4 w-full">
-                {recentCandidatures.length > 0 ? recentCandidatures.map((c: any) => (
+                {pendingCandidatures.length > 0 ? pendingCandidatures.map((c: any) => (
                   <div 
                     key={c._id} 
                     onClick={() => { setSelectedUserKey(c.discordId); setView('folder'); setSelectedCandidId(c._id); }} 
@@ -250,7 +250,7 @@ export default function AdminCandidaturesPage() {
                     </div>
                     <span className="text-[9px] text-[#683892] font-black uppercase tracking-widest opacity-0 translate-x-[-10px] group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500 mr-4">Examiner →</span>
                   </div>
-                )) : <p className="text-neutral-700 text-[10px] font-black uppercase tracking-widest ml-4">Aucune candidature en attente.</p>}
+                )) : <p className="text-neutral-700 text-[10px] font-black uppercase tracking-widest ml-4">Aucune candidature en attente de traitement.</p>}
               </div>
             </section>
 
@@ -301,7 +301,18 @@ export default function AdminCandidaturesPage() {
                     <div className={`px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest ${activeCandidature.status === 'en_attente' ? 'border-amber-500/30 text-amber-500 bg-amber-500/5' : activeCandidature.status === 'accepte' ? 'border-green-500/30 text-green-500 bg-green-500/5' : 'border-red-500/30 text-red-500 bg-red-500/5'}`}>{activeCandidature.status === 'en_attente' ? 'En Attente' : activeCandidature.status.toUpperCase()}</div>
                   </div>
 
-                  {/* RAISON DU REFUS (Si la fiche est actuellement refusée) */}
+                  {/* RAISON DU REFUS PRÉCÉDENT */}
+                  {activeCandidature.status === 'en_attente' && activeCandidature.lastRefusalReason && (
+                    <div className="mb-8 p-6 bg-amber-500/5 border border-amber-500/20 rounded-[2rem] flex gap-5 items-center">
+                      <div className="text-2xl animate-pulse">⚠️</div>
+                      <div>
+                        <span className="block text-[10px] text-amber-500 font-black uppercase tracking-widest mb-1">Candidature représentée après un refus</span>
+                        <p className="text-xs text-neutral-400 italic">"Ancien motif : {activeCandidature.lastRefusalReason}"</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* RAISON DU REFUS ACTUELLE */}
                   {activeCandidature.status === 'refuse' && activeCandidature.refusalReason && (
                     <div className="mb-8 p-8 bg-red-500/10 border border-red-500/20 rounded-[2.5rem]">
                       <span className="block text-[10px] text-red-500 font-black uppercase tracking-widest mb-3">Motif du rejet :</span>
@@ -316,12 +327,32 @@ export default function AdminCandidaturesPage() {
                           <h3 className="text-5xl font-black text-white uppercase italic tracking-tighter mt-1">{activeCandidature.rpName}</h3>
                           <span className="inline-block mt-4 px-3 py-1 bg-[#683892]/20 border border-[#683892]/40 rounded-lg text-sm font-black text-[#CBDBFC] uppercase">{activeCandidature.age} ans</span>
                        </div>
+
+                       {/* AFFICHAGE DES NOUVELLES ZONES */}
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                          <div className="space-y-3">
+                             <span className="text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">Description Physique</span>
+                             <p className="text-sm text-[#CBDBFC]/80 leading-relaxed italic border-l border-[#683892]/30 pl-4">{activeCandidature.physique || "Non spécifiée"}</p>
+                          </div>
+                          <div className="space-y-3">
+                             <span className="text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">Description Mentale</span>
+                             <p className="text-sm text-[#CBDBFC]/80 leading-relaxed italic border-l border-[#683892]/30 pl-4">{activeCandidature.mental || "Non spécifiée"}</p>
+                          </div>
+                       </div>
+
                        <div className="mb-6 opacity-30 text-[10px] font-black uppercase tracking-[0.4em] text-white">Récit & Lore</div>
                        <LoreRenderer content={activeCandidature.lore} />
                     </div>
                     <div className="flex flex-col items-center gap-4">
-                      <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-500">Apparence 3D</span>
+                      <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-500">Skin 3D</span>
                       <SkinViewer3D skinUrl={activeCandidature.skinUrl} width={250} height={350} />
+                      
+                      {/* PSEUDO MC */}
+                      <div className="mt-4 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-center w-full">
+                         <span className="block text-[8px] text-neutral-500 uppercase font-black tracking-widest mb-1">Pseudo Minecraft</span>
+                         <span className="text-sm font-bold text-[#CBDBFC] tracking-tight">{activeCandidature.mcPseudo || "Inconnu"}</span>
+                      </div>
+                      
                       <SkinDimensions url={activeCandidature.skinUrl} />
                     </div>
                   </div>
