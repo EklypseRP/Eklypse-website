@@ -15,7 +15,6 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(bytes);
 
     const filename = `${uuidv4()}.png`;
-    // On cible le dossier public/uploads/skins
     const uploadDir = path.join(process.cwd(), "public", "uploads", "skins");
 
     await mkdir(uploadDir, { recursive: true });
@@ -23,10 +22,10 @@ export async function POST(req: Request) {
     const filePath = path.join(uploadDir, filename);
     await writeFile(filePath, buffer);
 
-    // Retourne l'URL relative accessible par le navigateur
+    // MODIFICATION ICI : On utilise la route API créée à l'étape 1
     return NextResponse.json({ 
       success: true, 
-      url: `/uploads/skins/${filename}` 
+      url: `/api/skins/${filename}` 
     });
   } catch (error) {
     console.error("Upload Error:", error);

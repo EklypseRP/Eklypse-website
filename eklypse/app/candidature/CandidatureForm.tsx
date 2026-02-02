@@ -149,20 +149,27 @@ export default function CandidatureForm() {
       return;
     }
 
+    // Prévisualisation locale immédiate avec Blob
     const localUrl = URL.createObjectURL(file);
     setSkinPreview(localUrl);
     setIsUploading(true);
+
     const data = new FormData();
     data.append("file", file);
     try {
       const res = await fetch("/api/upload/skin", { method: "POST", body: data });
       const result = await res.json();
       if (result.success) {
+        // L'URL renvoyée par le serveur (via la nouvelle API) est stockée
         const newFormData = { ...formData, skinUrl: result.url };
         setFormData(newFormData);
         saveToLocal(newFormData, editor?.getJSON());
       }
-    } catch (err) { alert("Erreur upload"); } finally { setIsUploading(false); }
+    } catch (err) { 
+      alert("Erreur upload"); 
+    } finally { 
+      setIsUploading(false); 
+    }
   };
 
   const handleEditApplication = (c: any) => {
@@ -366,6 +373,7 @@ export default function CandidatureForm() {
             <div className="lg:col-span-4 flex flex-col items-center gap-6 sticky top-10">
                <div className="flex flex-col items-center gap-4">
                   <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.4em]">Skin 3D</span>
+                  {/* Utilise selectedCandid.skinUrl qui contient maintenant le lien API valide */}
                   <SkinViewer3D skinUrl={selectedCandid.skinUrl} width={260} height={380} />
                   <div className="mt-4 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-center w-full">
                      <span className="block text-[8px] text-neutral-500 uppercase font-black tracking-widest mb-1">Pseudo Minecraft</span>
@@ -439,8 +447,9 @@ export default function CandidatureForm() {
               </div>
               <div className="flex flex-col items-center gap-4">
                 <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.4em]">Skin 3D</span>
-                <SkinViewer3D skinUrl={skinPreview} />
-                <SkinDimensions url={skinPreview} />
+                {/* On privilégie skinPreview (blob local) pour la fluidité lors de l'upload, sinon l'URL serveur */}
+                <SkinViewer3D skinUrl={skinPreview || formData.skinUrl} />
+                <SkinDimensions url={skinPreview || formData.skinUrl} />
               </div>
             </div>
 
