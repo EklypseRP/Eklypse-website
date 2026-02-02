@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.5",
+    "@r4ai/remark-callout": "^0.6.2",
     "@tiptap/extension-text-style": "^3.18.0",
     "@tiptap/extension-underline": "^3.18.0",
     "@tiptap/react": "^3.18.0",
@@ -24,6 +25,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
+    "remark-callouts": "^2.0.0",
     "remark-gfm": "^4.0.1",
     "skinview3d": "^3.4.1",
     "tiptap-extension-font-size": "^1.2.0",
