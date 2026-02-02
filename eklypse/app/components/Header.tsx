@@ -92,8 +92,6 @@ const Header: React.FC = () => {
           transform: 'translateX(-50%)'
         }}>
           {navItems.map((item) => {
-            // LOGIQUE DE LA BARRE ACTIVE :
-            // Active si c'est le lien actuel OU si on est sur /login et que l'item est /candidature
             let isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
             if (item.href === '/candidature' && pathname === '/login') {
               isActive = true;
@@ -119,32 +117,88 @@ const Header: React.FC = () => {
         </nav>
       )}
 
-      {/* Côté Droit : Auth Button & Mobile Toggle */}
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem' }}>
+      {/* Côté Droit : Auth Button, Badge Discord & Mobile Toggle */}
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1.5rem' }}>
         {!isMobile && (
           session?.user ? (
-            <button 
-              onClick={() => signOut({ callbackUrl: '/' })}
-              style={{
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.2)',
-                color: '#ef4444',
-                padding: '0.5rem 1.2rem',
-                borderRadius: '8px',
-                fontSize: '0.8rem',
-                fontWeight: '700',
-                cursor: 'pointer',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.2)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
-            >
-              Quitter
-            </button>
+            <>
+              {/* Badge Discord (Comme dans la page candidature) */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.4rem 1rem',
+                backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(104, 56, 146, 0.2)',
+                borderRadius: '12px',
+              }}>
+                <div style={{ position: 'relative', width: '30px', height: '30px' }}>
+                  <Image 
+                    src={session.user.image} 
+                    alt="Avatar" 
+                    width={30} 
+                    height={30} 
+                    style={{ 
+                      borderRadius: '50%', 
+                      border: `1px solid ${COLORS.purple}88`,
+                      boxShadow: `0 0 10px ${COLORS.purple}44`
+                    }} 
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '-1px',
+                    right: '-1px',
+                    width: '10px',
+                    height: '10px',
+                    backgroundColor: '#22c55e',
+                    border: `2px solid ${COLORS.almostBlack}`,
+                    borderRadius: '50%'
+                  }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ 
+                    fontSize: '9px', 
+                    fontWeight: '900', 
+                    textTransform: 'uppercase', 
+                    color: 'rgba(203, 219, 252, 0.4)', 
+                    letterSpacing: '0.05em',
+                    lineHeight: '1'
+                  }}>
+                    Connecté
+                  </span>
+                  <span style={{ 
+                    fontSize: '0.85rem', 
+                    fontWeight: '700', 
+                    color: COLORS.lightText,
+                    letterSpacing: '-0.02em'
+                  }}>
+                    {session.user.name}
+                  </span>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => signOut({ callbackUrl: '/' })}
+                style={{
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  color: '#ef4444',
+                  padding: '0.5rem 1.2rem',
+                  borderRadius: '8px',
+                  fontSize: '0.8rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
+              >
+                Quitter
+              </button>
+            </>
           ) : (
-            /* FIX : On masque le bouton Connexion si on est déjà sur la page /login */
             pathname !== '/login' && (
               <Link href="/login" style={{ textDecoration: 'none' }}>
                 <button style={{
@@ -200,8 +254,26 @@ const Header: React.FC = () => {
           gap: '1rem',
           animation: 'slideDown 0.3s ease-out'
         }}>
+          {/* Badge Discord Mobile */}
+          {session?.user && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              padding: '1rem',
+              backgroundColor: 'rgba(255, 255, 255, 0.03)',
+              borderRadius: '15px',
+              marginBottom: '0.5rem'
+            }}>
+              <Image src={session.user.image} alt="Avatar" width={40} height={40} style={{ borderRadius: '50%' }} />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '10px', fontWeight: '800', color: 'rgba(203, 219, 252, 0.4)', textTransform: 'uppercase' }}>Session active</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>{session.user.name}</span>
+              </div>
+            </div>
+          )}
+
           {navItems.map((item) => {
-            // Même logique isActive pour le mobile
             let isActive = (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
             if (item.href === '/candidature' && pathname === '/login') isActive = true;
 
@@ -225,7 +297,6 @@ const Header: React.FC = () => {
             );
           })}
 
-          {/* Dashboard Mobile */}
           {session?.user?.isRecruiter && (
             <Link 
               href="/admin/candidatures"
@@ -244,7 +315,6 @@ const Header: React.FC = () => {
             </Link>
           )}
 
-          {/* Bouton Auth Mobile */}
           {session?.user ? (
             <button 
               onClick={() => { signOut({ callbackUrl: '/' }); setIsMobileMenuOpen(false); }}
@@ -263,7 +333,6 @@ const Header: React.FC = () => {
               Quitter
             </button>
           ) : (
-            /* FIX : Masqué sur mobile aussi si on est sur /login */
             pathname !== '/login' && (
               <Link 
                 href="/login"

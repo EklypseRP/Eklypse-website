@@ -20,16 +20,23 @@ const FADE_IN_ANIMATION = `
 `;
 
 const EDITOR_STYLES = `
-  .tiptap-editor strong { font-weight: bold !important; color: white; }
-  .tiptap-editor em { font-style: italic !important; }
-  .tiptap-editor u { text-decoration: underline !important; }
-  .tiptap-editor h2 { font-size: 1.5rem !important; font-weight: bold !important; margin-top: 1.5rem !important; color: #CBDBFC; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; }
-  .tiptap-editor ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin-bottom: 1rem !important; }
-  .tiptap-editor p { margin-bottom: 1rem; line-height: 1.6; }
+  .tiptap-editor {
+    background-color: transparent !important;
+    color: white !important;
+    min-height: 500px;
+  }
+  
+  .tiptap-editor strong { font-weight: bold !important; color: white !important; }
+  .tiptap-editor em { font-style: italic !important; color: white !important; }
+  .tiptap-editor u { text-decoration: underline !important; color: white !important; }
+  .tiptap-editor h2 { font-size: 1.5rem !important; font-weight: bold !important; margin-top: 1.5rem !important; color: #CBDBFC !important; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; }
+  .tiptap-editor ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin-bottom: 1rem !important; color: white !important; }
+  .tiptap-editor p { margin-bottom: 1rem; line-height: 1.6; color: white !important; }
+  
   .custom-scrollbar::-webkit-scrollbar { width: 6px; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(104, 56, 146, 0.3); border-radius: 10px; }
 
-  /* Correction de la zone blanche sur les inputs et textareas */
+  /* FIX AUTOFILL & SUGGESTIONS : On force le fond sombre même si le navigateur remplit le champ */
   input:-webkit-autofill,
   input:-webkit-autofill:hover, 
   input:-webkit-autofill:focus,
@@ -37,18 +44,29 @@ const EDITOR_STYLES = `
   textarea:-webkit-autofill:hover,
   textarea:-webkit-autofill:focus {
     -webkit-text-fill-color: white !important;
-    -webkit-box-shadow: 0 0 0px 1000px #0e0816 inset !important;
+    -webkit-box-shadow: 0 0 0px 1000px #140b1d inset !important; 
     transition: background-color 5000s ease-in-out 0s;
   }
   
+  /* Couleur de fond d'origine (bg-white/[0.03]) verrouillée */
   input, textarea, select {
     background-color: rgba(255, 255, 255, 0.03) !important;
     color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
   }
 
-  input:focus, textarea:focus {
-    background-color: rgba(255, 255, 255, 0.05) !important;
+  /* Empeche le changement de couleur au focus */
+  input:focus, textarea:focus, select:focus {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    border-color: #683892 !important;
     outline: none !important;
+  }
+
+  /* FIX CRUCIAL POUR LES MENUS DÉROULANTS : 
+     Les options ne supportent pas la transparence. On met un fond solide sombre. */
+  select option {
+    background-color: #140b1d !important;
+    color: white !important;
   }
 `;
 
@@ -86,8 +104,14 @@ const MenuBar = ({ editor }: { editor: any }) => {
       <div className="flex gap-3 px-4 border-r border-white/10 font-sans">
         <div className="flex flex-col gap-1">
           <span className="text-[10px] uppercase font-bold text-neutral-600 ml-1">Taille</span>
-          <select className="bg-white/5 border border-white/10 text-[12px] text-neutral-400 rounded-lg px-2 py-1 outline-none cursor-pointer" onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}>
-            <option value="16px">16px</option><option value="14px">14px</option><option value="18px">18px</option><option value="22px">22px</option>
+          <select 
+            className="bg-white/[0.03] border border-white/10 text-[12px] text-white rounded-lg px-2 py-1 outline-none cursor-pointer" 
+            onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}
+          >
+            <option value="14px">14px</option>
+            <option value="16px">16px</option>
+            <option value="18px">18px</option>
+            <option value="22px">22px</option>
           </select>
         </div>
       </div>
@@ -150,7 +174,11 @@ export default function CandidatureForm() {
   const editor = useEditor({
     extensions: [StarterKit, TextStyle, FontSize, lineHeight, Underline],
     immediatelyRender: false,
-    editorProps: { attributes: { class: 'tiptap-editor focus:outline-none p-10 text-white prose prose-invert max-w-none text-base outline-none' } },
+    editorProps: { 
+      attributes: { 
+        class: 'tiptap-editor focus:outline-none p-10 text-white prose prose-invert max-w-none text-base outline-none' 
+      } 
+    },
     onUpdate: ({ editor }) => {
       setSaveStatus('saving');
       saveToLocal(formData, editor.getJSON());
@@ -263,9 +291,8 @@ export default function CandidatureForm() {
     e.preventDefault();
     if (!editor || loading) return;
     
-    // VALIDATIONS STRICTES
     if (parseInt(formData.age) < 18) return alert("Âge minimum requis : 18 ans.");
-    if (!formData.taille.trim()) return alert("La taille est obligatoire."); 
+    if (!formData.taille.trim()) return alert("La taille est obligatoire (en chiffres uniquement)."); 
     if (!formData.race.trim()) return alert("La race est obligatoire.");
     if (!formData.physique.trim()) return alert("La description physique est obligatoire.");
     if (!formData.mental.trim()) return alert("La description mentale est obligatoire.");
@@ -408,7 +435,6 @@ export default function CandidatureForm() {
                     </div>
                  </div>
                  
-                 {/* Mise à jour Details View : Description Physique et Mentale l'une sur l'autre */}
                  <div className="space-y-12 mb-12">
                     <div className="space-y-3">
                        <span className="text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">Description Physique</span>
@@ -469,48 +495,50 @@ export default function CandidatureForm() {
             
             <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="space-y-2 lg:col-span-1">
-                <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-3 ml-1">Nom RP</label>
-                <input name="rpName" value={formData.rpName} onChange={handleInputChange} required placeholder="Jean Dupont" className="w-full p-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white focus:border-[#683892] outline-none transition-all text-sm" />
+                <label className="block text-center text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-3">Nom RP</label>
+                <input name="rpName" value={formData.rpName} onChange={handleInputChange} required autoComplete="off" placeholder="Jean Dupont" className="w-full p-4 rounded-2xl text-white outline-none transition-all text-sm" />
               </div>
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-3 ml-1">Âge (18+)</label>
-                <input name="age" type="text" value={formData.age} onChange={handleInputChange} required placeholder="24" className="w-full p-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white focus:border-[#683892] outline-none transition-all text-sm" />
+                <label className="block text-center text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-3">Âge (18+)</label>
+                <input name="age" type="text" value={formData.age} onChange={handleInputChange} required autoComplete="off" placeholder="24" className="w-full p-4 rounded-2xl text-white outline-none transition-all text-sm" />
               </div>
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-3 ml-1">Taille (cm)</label>
-                <input name="taille" type="text" value={formData.taille} onChange={handleInputChange} required placeholder="180" className="w-full p-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white focus:border-[#683892] outline-none transition-all text-sm" />
+                <label className="block text-center text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-3">Taille (cm)</label>
+                <input name="taille" type="text" value={formData.taille} onChange={handleInputChange} required autoComplete="off" placeholder="180" className="w-full p-4 rounded-2xl text-white outline-none transition-all text-sm" />
               </div>
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-3 ml-1">Race</label>
-                <select name="race" value={formData.race} onChange={handleInputChange} required className="w-full p-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white focus:border-[#683892] outline-none transition-all text-sm cursor-pointer appearance-none">
-                  <option value="Humain" className="bg-[#0e0816]">Humain</option>
-                  <option value="Elfe" className="bg-[#0e0816]">Elfe</option>
-                  <option value="Nain" className="bg-[#0e0816]">Nain</option>
-                  <option value="Autre" className="bg-[#0e0816]">Autre</option>
+                <label className="block text-center text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-3">Race</label>
+                <select name="race" value={formData.race} onChange={handleInputChange} required className="w-full p-4 rounded-2xl text-white cursor-pointer outline-none">
+                  <option value="Humain">Humain</option>
+                  <option value="Elfe">Elfe</option>
+                  <option value="Nain">Nain</option>
+                  <option value="Autre">Autre</option>
                 </select>
                 {formData.race === 'Autre' && (
-                  <p className="text-[9px] text-amber-500 font-black uppercase tracking-widest mt-2 ml-1 animate-pulse">⚠️ Nécessite un ticket</p>
+                  <p className="text-[9px] text-center text-amber-500 font-black uppercase tracking-widest mt-2 animate-pulse">⚠️ Nécessite un ticket</p>
                 )}
               </div>
             </div>
 
-            {/* MISE À JOUR : Les descriptions Physique et Mentale sont désormais l'une sur l'autre et prennent toute la largeur */}
             <div className="space-y-12">
               <div className="space-y-2">
                 <label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">Description Physique (Minimum 5 lignes)</label>
-                <textarea name="physique" value={formData.physique} onChange={handleInputChange} placeholder="Apparence, style vestimentaire, signes distinctifs..." className="w-full h-32 p-6 bg-white/[0.03] border border-white/10 rounded-[1.5rem] text-white focus:border-[#683892] outline-none transition-all resize-none custom-scrollbar" />
+                <textarea name="physique" value={formData.physique} onChange={handleInputChange} placeholder="Apparence, style vestimentaire, signes distinctifs..." className="w-full h-32 p-6 rounded-[1.5rem] text-white outline-none transition-all resize-none custom-scrollbar" />
               </div>
               
               <div className="space-y-2">
                 <label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">Description Mentale (Minimum 5 lignes)</label>
-                <textarea name="mental" value={formData.mental} onChange={handleInputChange} placeholder="Caractère, tempérament, psychologie, peurs..." className="w-full h-32 p-6 bg-white/[0.03] border border-white/10 rounded-[1.5rem] text-white focus:border-[#683892] outline-none transition-all resize-none custom-scrollbar" />
+                <textarea name="mental" value={formData.mental} onChange={handleInputChange} placeholder="Caractère, tempérament, psychologie, peurs..." className="w-full h-32 p-6 rounded-[1.5rem] text-white outline-none transition-all resize-none custom-scrollbar" />
               </div>
             </div>
 
             <div className="space-y-4">
               <label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Récit & Lore (Minimum 25 lignes)</label>
-              <div className="group relative h-[650px] flex flex-col border border-white/10 rounded-[2.5rem] bg-white/[0.02] focus-within:border-[#683892] transition-all overflow-hidden shadow-3xl">
-                <MenuBar editor={editor} /><div className="flex-1 overflow-y-auto custom-scrollbar"><EditorContent editor={editor} /></div>
+              <div className="group relative min-h-[600px] flex flex-col border border-white/10 rounded-[2.5rem] bg-white/[0.02] focus-within:border-[#683892] transition-all overflow-hidden shadow-3xl">
+                <MenuBar editor={editor} />
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                  <EditorContent editor={editor} />
+                </div>
               </div>
             </div>
 
@@ -518,7 +546,7 @@ export default function CandidatureForm() {
               <div className="space-y-8">
                 <div className="space-y-4">
                    <label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Pseudo Minecraft <span className="text-red-500">*</span></label>
-                   <input name="mcPseudo" value={formData.mcPseudo} onChange={handleInputChange} required placeholder="Ex: Steve_64" className="w-full p-6 bg-black/20 border border-white/10 rounded-2xl text-white focus:border-[#683892] outline-none transition-all" />
+                   <input name="mcPseudo" value={formData.mcPseudo} onChange={handleInputChange} required autoComplete="off" placeholder="Ex: Steve_64" className="w-full p-6 bg-black/20 border border-white/10 rounded-2xl text-white focus:border-[#683892] outline-none transition-all" />
                 </div>
                 <div className="space-y-4">
                   <label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Fichier Apparence (.png - Max 512x512) <span className="text-red-500">*</span></label>
