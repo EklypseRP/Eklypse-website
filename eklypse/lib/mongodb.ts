@@ -1,6 +1,8 @@
 import { MongoClient } from 'mongodb';
 
 const uri = process.env.MONGODB_URI as string;
+const dbName = process.env.MONGODB_DB || "Eklypse"; // Valeur par défaut si non définie
+
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
@@ -17,6 +19,15 @@ if (process.env.NODE_ENV === 'development') {
 } else {
   client = new MongoClient(uri);
   clientPromise = client.connect();
+}
+
+/**
+ * Utilise cette fonction partout pour obtenir la base de données
+ * sans jamais écrire son nom en dur dans les autres fichiers.
+ */
+export async function getDb() {
+  const client = await clientPromise;
+  return client.db(dbName);
 }
 
 export default clientPromise;

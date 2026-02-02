@@ -1,6 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import DiscordProvider from "next-auth/providers/discord";
-import clientPromise from "@/lib/mongodb";
+import { getDb } from "@/lib/mongodb"; // On importe la nouvelle fonction
 
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const ROLE_MEMBER = "1462127752818856210";
@@ -30,17 +30,17 @@ export const authOptions: NextAuthOptions = {
 
         if (!roles.includes(ROLE_MEMBER)) return "/unauthorized";
 
-        // Synchronisation avec MongoDB
-        const client = await clientPromise;
-        const db = client.db("Eklypse");
+        // APPEL DYNAMIQUE : On récupère la DB configurée
+        const db = await getDb();
+        
         await db.collection("users").updateOne(
-          { email: user.email }, //
+          { email: user.email },
           { 
             $set: { 
-              discordId: profile.id, //
-              name: user.name, //
-              image: user.image, //
-              lastLogin: new Date() //
+              discordId: profile.id,
+              name: user.name,
+              image: user.image,
+              lastLogin: new Date()
             } 
           },
           { upsert: true }
