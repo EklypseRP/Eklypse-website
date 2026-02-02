@@ -14,7 +14,6 @@ import { FontSize } from 'tiptap-extension-font-size';
 // @ts-ignore
 import { lineHeight } from 'tiptap-extension-line-height';
 
-// ===== ANIMATIONS STYLE PAGE PRINCIPALE =====
 const DASHBOARD_ANIMATIONS = `
   @keyframes smoothFadeIn {
     from { opacity: 0; transform: translateY(10px); }
@@ -27,22 +26,15 @@ const DASHBOARD_ANIMATIONS = `
   }
 `;
 
-// ===== COMPOSANT ANALYSE DIMENSIONS =====
 const SkinDimensions = ({ url }: { url: string | null | undefined }) => {
   const [dims, setDims] = useState<string | null>(null);
-
   useEffect(() => {
-    if (!url) {
-      setDims(null);
-      return;
-    }
+    if (!url) { setDims(null); return; }
     const img = new window.Image();
     img.onload = () => setDims(`${img.naturalWidth}x${img.naturalHeight}`);
     img.src = url;
   }, [url]);
-
   if (!dims) return null;
-
   return (
     <div className="mt-2 px-4 py-2 bg-black/40 border border-white/5 rounded-full">
       <span className="text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: 'rgba(203, 219, 252, 0.9)' }}>
@@ -52,7 +44,6 @@ const SkinDimensions = ({ url }: { url: string | null | undefined }) => {
   );
 };
 
-// ===== RENDU LORE (JSON) =====
 const LoreRenderer = ({ content }: { content: any }) => {
   const editor = useEditor({
     extensions: [StarterKit, TextStyle, FontSize, lineHeight, Underline],
@@ -144,7 +135,6 @@ export default function AdminCandidaturesPage() {
     });
   }, [allCandidatures]);
 
-  // --- MODIFICATION : Affiche TOUTES les candidatures en attente ---
   const pendingCandidatures = useMemo(() => {
     return [...allCandidatures]
       .filter(c => c.status === 'en_attente')
@@ -167,20 +157,12 @@ export default function AdminCandidaturesPage() {
     <div className="min-h-screen bg-[#0a0612] relative overflow-x-hidden font-sans">
       <style dangerouslySetInnerHTML={{ __html: DASHBOARD_ANIMATIONS }} />
       
-      {/* BACKGROUND ANIMÉ */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div 
-          className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] rounded-full bg-[#683892]/20 blur-[120px]" 
-          style={{ animation: 'floatGlow 8s ease-in-out infinite' }}
-        />
-        <div 
-          className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-[#683892]/10 blur-[120px]" 
-          style={{ animation: 'floatGlow 12s ease-in-out infinite reverse' }}
-        />
+        <div className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] rounded-full bg-[#683892]/20 blur-[120px]" style={{ animation: 'floatGlow 8s ease-in-out infinite' }} />
+        <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-[#683892]/10 blur-[120px]" style={{ animation: 'floatGlow 12s ease-in-out infinite reverse' }} />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(104,56,146,0.03)_0%,transparent_100%)]" />
       </div>
 
-      {/* MODAL DE REFUS */}
       {refusalModal.show && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
           <div className="w-full max-w-lg bg-[#140b1d] border border-white/10 p-8 rounded-[2.5rem] shadow-2xl">
@@ -194,7 +176,6 @@ export default function AdminCandidaturesPage() {
         </div>
       )}
 
-      {/* CONTENU PRINCIPAL */}
       <main 
         key={view + (selectedCandidId || 'none')} 
         style={{ 
@@ -228,7 +209,6 @@ export default function AdminCandidaturesPage() {
 
         {view === 'overview' ? (
           <div className="space-y-24 w-full">
-            {/* TOUTES LES CANDIDATURES EN ATTENTE */}
             <section>
               <div className="flex items-center gap-4 mb-8 ml-4">
                 <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
@@ -254,7 +234,6 @@ export default function AdminCandidaturesPage() {
               </div>
             </section>
 
-            {/* ARCHIVES PAR DOSSIER */}
             <section className="w-full">
               <h2 className="text-xs font-black uppercase tracking-[0.4em] text-neutral-600 mb-8 ml-4 italic">Archives des Membres</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
@@ -301,7 +280,6 @@ export default function AdminCandidaturesPage() {
                     <div className={`px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest ${activeCandidature.status === 'en_attente' ? 'border-amber-500/30 text-amber-500 bg-amber-500/5' : activeCandidature.status === 'accepte' ? 'border-green-500/30 text-green-500 bg-green-500/5' : 'border-red-500/30 text-red-500 bg-red-500/5'}`}>{activeCandidature.status === 'en_attente' ? 'En Attente' : activeCandidature.status.toUpperCase()}</div>
                   </div>
 
-                  {/* RAISON DU REFUS PRÉCÉDENT */}
                   {activeCandidature.status === 'en_attente' && activeCandidature.lastRefusalReason && (
                     <div className="mb-8 p-6 bg-amber-500/5 border border-amber-500/20 rounded-[2rem] flex gap-5 items-center">
                       <div className="text-2xl animate-pulse">⚠️</div>
@@ -312,11 +290,21 @@ export default function AdminCandidaturesPage() {
                     </div>
                   )}
 
-                  {/* RAISON DU REFUS ACTUELLE */}
                   {activeCandidature.status === 'refuse' && activeCandidature.refusalReason && (
                     <div className="mb-8 p-8 bg-red-500/10 border border-red-500/20 rounded-[2.5rem]">
                       <span className="block text-[10px] text-red-500 font-black uppercase tracking-widest mb-3">Motif du rejet :</span>
                       <p className="text-sm text-neutral-200 italic leading-relaxed">"{activeCandidature.refusalReason}"</p>
+                    </div>
+                  )}
+
+                  {/* AJOUT : BANDEAU D'ALERTE POUR LA RACE "AUTRE" */}
+                  {activeCandidature.race === 'Autre' && activeCandidature.status === 'en_attente' && (
+                    <div className="mb-8 p-6 bg-amber-500/5 border border-amber-500/20 rounded-[2rem] flex gap-5 items-center shadow-lg">
+                      <div className="text-2xl">🎫</div>
+                      <div>
+                        <span className="block text-[10px] text-amber-500 font-black uppercase tracking-widest mb-1">Race Particulière détectée</span>
+                        <p className="text-xs text-neutral-400 italic">Un ticket doit être ouvert par le joueur sous peu pour valider les spécificités de cette race.</p>
+                      </div>
                     </div>
                   )}
 
@@ -325,10 +313,14 @@ export default function AdminCandidaturesPage() {
                        <div className="mb-10 pb-8 border-b border-white/10">
                           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-500">Identité Consignée</span>
                           <h3 className="text-5xl font-black text-white uppercase italic tracking-tighter mt-1">{activeCandidature.rpName}</h3>
-                          <span className="inline-block mt-4 px-3 py-1 bg-[#683892]/20 border border-[#683892]/40 rounded-lg text-sm font-black text-[#CBDBFC] uppercase">{activeCandidature.age} ans</span>
+                          
+                          <div className="flex flex-wrap gap-3 mt-4">
+                            <span className="px-3 py-1 bg-[#683892]/20 border border-[#683892]/40 rounded-lg text-sm font-black text-[#CBDBFC] uppercase">{activeCandidature.age} ans</span>
+                            <span className={`px-3 py-1 border rounded-lg text-sm font-black uppercase ${activeCandidature.race === 'Autre' ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' : 'bg-[#683892]/20 border-[#683892]/40 text-[#CBDBFC]'}`}>Race : {activeCandidature.race || "Inconnue"}</span>
+                            <span className="px-3 py-1 bg-[#683892]/20 border border-[#683892]/40 rounded-lg text-sm font-black text-[#CBDBFC] uppercase">Taille : {activeCandidature.taille || "Inconnue"}</span>
+                          </div>
                        </div>
 
-                       {/* AFFICHAGE DES NOUVELLES ZONES */}
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
                           <div className="space-y-3">
                              <span className="text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">Description Physique</span>
@@ -347,7 +339,6 @@ export default function AdminCandidaturesPage() {
                       <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-500">Skin 3D</span>
                       <SkinViewer3D skinUrl={activeCandidature.skinUrl} width={250} height={350} />
                       
-                      {/* PSEUDO MC */}
                       <div className="mt-4 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-center w-full">
                          <span className="block text-[8px] text-neutral-500 uppercase font-black tracking-widest mb-1">Pseudo Minecraft</span>
                          <span className="text-sm font-bold text-[#CBDBFC] tracking-tight">{activeCandidature.mcPseudo || "Inconnu"}</span>

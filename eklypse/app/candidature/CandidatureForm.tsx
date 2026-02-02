@@ -19,6 +19,39 @@ const FADE_IN_ANIMATION = `
   }
 `;
 
+const EDITOR_STYLES = `
+  .tiptap-editor strong { font-weight: bold !important; color: white; }
+  .tiptap-editor em { font-style: italic !important; }
+  .tiptap-editor u { text-decoration: underline !important; }
+  .tiptap-editor h2 { font-size: 1.5rem !important; font-weight: bold !important; margin-top: 1.5rem !important; color: #CBDBFC; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; }
+  .tiptap-editor ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin-bottom: 1rem !important; }
+  .tiptap-editor p { margin-bottom: 1rem; line-height: 1.6; }
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(104, 56, 146, 0.3); border-radius: 10px; }
+
+  /* Correction de la zone blanche sur les inputs et textareas */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover, 
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus {
+    -webkit-text-fill-color: white !important;
+    -webkit-box-shadow: 0 0 0px 1000px #0e0816 inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+  
+  input, textarea, select {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    color: white !important;
+  }
+
+  input:focus, textarea:focus {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    outline: none !important;
+  }
+`;
+
 const SkinDimensions = ({ url }: { url: string | null | undefined }) => {
   const [dims, setDims] = useState<string | null>(null);
   useEffect(() => {
@@ -36,17 +69,6 @@ const SkinDimensions = ({ url }: { url: string | null | undefined }) => {
     </div>
   );
 };
-
-const EDITOR_STYLES = `
-  .tiptap-editor strong { font-weight: bold !important; color: white; }
-  .tiptap-editor em { font-style: italic !important; }
-  .tiptap-editor u { text-decoration: underline !important; }
-  .tiptap-editor h2 { font-size: 1.5rem !important; font-weight: bold !important; margin-top: 1.5rem !important; color: #CBDBFC; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; }
-  .tiptap-editor ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin-bottom: 1rem !important; }
-  .tiptap-editor p { margin-bottom: 1rem; line-height: 1.6; }
-  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(104, 56, 146, 0.3); border-radius: 10px; }
-`;
 
 const ToolbarButton = ({ onClick, isActive, children, title }: { onClick: () => void, isActive: boolean, children: React.ReactNode, title: string }) => (
   <button type="button" onMouseDown={(e) => { e.preventDefault(); onClick(); }} title={title} className={`flex items-center justify-center min-w-[50px] h-[45px] px-3 rounded-xl border transition-all duration-300 ${isActive ? 'bg-[#683892] border-[#683892] text-white shadow-[0_0_15px_rgba(104,56,146,0.5)] scale-105' : 'bg-white/5 border-white/10 text-neutral-500 hover:text-white'}`}>{children}</button>
@@ -85,7 +107,16 @@ export default function CandidatureForm() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [currentRefusalReason, setCurrentRefusalReason] = useState<string | null>(null);
   
-  const [formData, setFormData] = useState({ rpName: '', age: '', physique: '', mental: '', mcPseudo: '', skinUrl: '' });
+  const [formData, setFormData] = useState({ 
+    rpName: '', 
+    age: '', 
+    taille: '',
+    race: 'Humain',
+    physique: '', 
+    mental: '', 
+    mcPseudo: '', 
+    skinUrl: '' 
+  });
   const [skinPreview, setSkinPreview] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -149,7 +180,6 @@ export default function CandidatureForm() {
       return;
     }
 
-    // Prévisualisation locale immédiate avec Blob
     const localUrl = URL.createObjectURL(file);
     setSkinPreview(localUrl);
     setIsUploading(true);
@@ -160,7 +190,6 @@ export default function CandidatureForm() {
       const res = await fetch("/api/upload/skin", { method: "POST", body: data });
       const result = await res.json();
       if (result.success) {
-        // L'URL renvoyée par le serveur (via la nouvelle API) est stockée
         const newFormData = { ...formData, skinUrl: result.url };
         setFormData(newFormData);
         saveToLocal(newFormData, editor?.getJSON());
@@ -178,6 +207,8 @@ export default function CandidatureForm() {
     setFormData({ 
       rpName: c.rpName || '', 
       age: c.age?.toString() || '', 
+      taille: c.taille || '',
+      race: c.race || 'Humain',
       physique: c.physique || '',
       mental: c.mental || '',
       mcPseudo: c.mcPseudo || '',
@@ -195,6 +226,8 @@ export default function CandidatureForm() {
     setFormData({ 
       rpName: draft.rpName || '', 
       age: draft.age || '', 
+      taille: draft.taille || '',
+      race: draft.race || 'Humain',
       physique: draft.physique || '',
       mental: draft.mental || '',
       mcPseudo: draft.mcPseudo || '',
@@ -213,11 +246,13 @@ export default function CandidatureForm() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     let finalValue = value;
-    if (name === 'age') finalValue = value.replace(/[^0-9]/g, '');
+
+    if (name === 'age' || name === 'taille') finalValue = value.replace(/[^0-9]/g, '');
     else if (name === 'rpName') finalValue = value.replace(/[0-9]/g, '');
+    
     const newFormData = { ...formData, [name]: finalValue };
     setFormData(newFormData);
     setSaveStatus('saving');
@@ -230,6 +265,8 @@ export default function CandidatureForm() {
     
     // VALIDATIONS STRICTES
     if (parseInt(formData.age) < 18) return alert("Âge minimum requis : 18 ans.");
+    if (!formData.taille.trim()) return alert("La taille est obligatoire."); 
+    if (!formData.race.trim()) return alert("La race est obligatoire.");
     if (!formData.physique.trim()) return alert("La description physique est obligatoire.");
     if (!formData.mental.trim()) return alert("La description mentale est obligatoire.");
     if (editor.getText().trim().length === 0) return alert("Le récit (Lore) ne peut pas être vide.");
@@ -266,11 +303,25 @@ export default function CandidatureForm() {
       {view === 'history' && (
         <div className="w-full space-y-16">
           <div className="flex flex-col items-center">
+            {draft && (
+              <div 
+                onClick={handleResumeDraft}
+                className="mb-8 p-6 bg-white/[0.03] border border-white/10 rounded-[2rem] flex items-center gap-6 cursor-pointer hover:bg-white/[0.05] transition-all group"
+              >
+                <div className="h-10 w-10 bg-amber-500/20 rounded-full flex items-center justify-center text-amber-500 animate-pulse">📝</div>
+                <div>
+                  <p className="text-[10px] font-black uppercase text-neutral-500 tracking-widest">Brouillon en cours</p>
+                  <p className="text-sm font-bold text-white italic">"{draft.rpName || 'Sans nom'}"</p>
+                </div>
+                <button onClick={handleDeleteDraft} className="ml-4 p-2 text-neutral-600 hover:text-red-500 transition-colors">✕</button>
+              </div>
+            )}
+
             <button 
               onClick={() => {
                 setEditingId(null);
                 setCurrentRefusalReason(null);
-                setFormData({ rpName: '', age: '', physique: '', mental: '', mcPseudo: '', skinUrl: '' });
+                setFormData({ rpName: '', age: '', taille: '', race: 'Humain', physique: '', mental: '', mcPseudo: '', skinUrl: '' });
                 setSkinPreview(null);
                 editor?.commands.clearContent();
                 setView('form');
@@ -350,10 +401,15 @@ export default function CandidatureForm() {
                  <div className="mb-10 pb-8 border-b border-white/10">
                     <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-500">Identité RP</span>
                     <h2 className="text-5xl font-black text-white uppercase italic tracking-tighter mt-1">{selectedCandid.rpName}</h2>
-                    <span className="inline-block mt-4 px-3 py-1 bg-[#683892]/20 border border-[#683892]/40 rounded-lg text-sm font-black text-[#CBDBFC] uppercase">{selectedCandid.age} ans</span>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <span className="px-3 py-1 bg-[#683892]/20 border border-[#683892]/40 rounded-lg text-sm font-black text-[#CBDBFC] uppercase">{selectedCandid.age} ans</span>
+                      <span className="px-3 py-1 bg-[#683892]/20 border border-[#683892]/40 rounded-lg text-sm font-black text-[#CBDBFC] uppercase">Race : {selectedCandid.race || 'Non spécifiée'}</span>
+                      <span className="px-3 py-1 bg-[#683892]/20 border border-[#683892]/40 rounded-lg text-sm font-black text-[#CBDBFC] uppercase">Taille : {selectedCandid.taille || 'Non spécifiée'}</span>
+                    </div>
                  </div>
                  
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                 {/* Mise à jour Details View : Description Physique et Mentale l'une sur l'autre */}
+                 <div className="space-y-12 mb-12">
                     <div className="space-y-3">
                        <span className="text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">Description Physique</span>
                        <p className="text-sm text-[#CBDBFC]/80 leading-relaxed italic border-l border-[#683892]/30 pl-4">{selectedCandid.physique}</p>
@@ -373,7 +429,6 @@ export default function CandidatureForm() {
             <div className="lg:col-span-4 flex flex-col items-center gap-6 sticky top-10">
                <div className="flex flex-col items-center gap-4">
                   <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.4em]">Skin 3D</span>
-                  {/* Utilise selectedCandid.skinUrl qui contient maintenant le lien API valide */}
                   <SkinViewer3D skinUrl={selectedCandid.skinUrl} width={260} height={380} />
                   <div className="mt-4 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-center w-full">
                      <span className="block text-[8px] text-neutral-500 uppercase font-black tracking-widest mb-1">Pseudo Minecraft</span>
@@ -412,18 +467,48 @@ export default function CandidatureForm() {
               </div>
             )}
             
-            <div className="max-w-xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="space-y-2"><label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">Identité RP</label><input name="rpName" value={formData.rpName} onChange={handleInputChange} required placeholder="Nom du Citoyen" className="w-full p-6 bg-white/[0.03] border border-white/10 rounded-[1.5rem] text-white focus:border-[#683892] outline-none transition-all" /></div>
-              <div className="space-y-2"><label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">Âge (Min. 18)</label><input name="age" type="text" value={formData.age} onChange={handleInputChange} required placeholder="18" className="w-full p-6 bg-white/[0.03] border border-white/10 rounded-[1.5rem] text-white focus:border-[#683892] outline-none transition-all" /></div>
+            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="space-y-2 lg:col-span-1">
+                <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-3 ml-1">Nom RP</label>
+                <input name="rpName" value={formData.rpName} onChange={handleInputChange} required placeholder="Jean Dupont" className="w-full p-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white focus:border-[#683892] outline-none transition-all text-sm" />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-3 ml-1">Âge (18+)</label>
+                <input name="age" type="text" value={formData.age} onChange={handleInputChange} required placeholder="24" className="w-full p-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white focus:border-[#683892] outline-none transition-all text-sm" />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-3 ml-1">Taille (cm)</label>
+                <input name="taille" type="text" value={formData.taille} onChange={handleInputChange} required placeholder="180" className="w-full p-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white focus:border-[#683892] outline-none transition-all text-sm" />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-3 ml-1">Race</label>
+                <select name="race" value={formData.race} onChange={handleInputChange} required className="w-full p-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white focus:border-[#683892] outline-none transition-all text-sm cursor-pointer appearance-none">
+                  <option value="Humain" className="bg-[#0e0816]">Humain</option>
+                  <option value="Elfe" className="bg-[#0e0816]">Elfe</option>
+                  <option value="Nain" className="bg-[#0e0816]">Nain</option>
+                  <option value="Autre" className="bg-[#0e0816]">Autre</option>
+                </select>
+                {formData.race === 'Autre' && (
+                  <p className="text-[9px] text-amber-500 font-black uppercase tracking-widest mt-2 ml-1 animate-pulse">⚠️ Nécessite un ticket</p>
+                )}
+              </div>
             </div>
 
-            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="space-y-2"><label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">Description Physique</label><textarea name="physique" value={formData.physique} onChange={handleInputChange} placeholder="Taille, style..." className="w-full h-32 p-6 bg-white/[0.03] border border-white/10 rounded-[1.5rem] text-white focus:border-[#683892] outline-none transition-all resize-none custom-scrollbar" /></div>
-              <div className="space-y-2"><label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">Description Mentale</label><textarea name="mental" value={formData.mental} onChange={handleInputChange} placeholder="Caractère..." className="w-full h-32 p-6 bg-white/[0.03] border border-white/10 rounded-[1.5rem] text-white focus:border-[#683892] outline-none transition-all resize-none custom-scrollbar" /></div>
+            {/* MISE À JOUR : Les descriptions Physique et Mentale sont désormais l'une sur l'autre et prennent toute la largeur */}
+            <div className="space-y-12">
+              <div className="space-y-2">
+                <label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">Description Physique (Minimum 5 lignes)</label>
+                <textarea name="physique" value={formData.physique} onChange={handleInputChange} placeholder="Apparence, style vestimentaire, signes distinctifs..." className="w-full h-32 p-6 bg-white/[0.03] border border-white/10 rounded-[1.5rem] text-white focus:border-[#683892] outline-none transition-all resize-none custom-scrollbar" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">Description Mentale (Minimum 5 lignes)</label>
+                <textarea name="mental" value={formData.mental} onChange={handleInputChange} placeholder="Caractère, tempérament, psychologie, peurs..." className="w-full h-32 p-6 bg-white/[0.03] border border-white/10 rounded-[1.5rem] text-white focus:border-[#683892] outline-none transition-all resize-none custom-scrollbar" />
+              </div>
             </div>
 
             <div className="space-y-4">
-              <label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Récit & Lore</label>
+              <label className="block text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Récit & Lore (Minimum 25 lignes)</label>
               <div className="group relative h-[650px] flex flex-col border border-white/10 rounded-[2.5rem] bg-white/[0.02] focus-within:border-[#683892] transition-all overflow-hidden shadow-3xl">
                 <MenuBar editor={editor} /><div className="flex-1 overflow-y-auto custom-scrollbar"><EditorContent editor={editor} /></div>
               </div>
@@ -447,7 +532,6 @@ export default function CandidatureForm() {
               </div>
               <div className="flex flex-col items-center gap-4">
                 <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.4em]">Skin 3D</span>
-                {/* On privilégie skinPreview (blob local) pour la fluidité lors de l'upload, sinon l'URL serveur */}
                 <SkinViewer3D skinUrl={skinPreview || formData.skinUrl} />
                 <SkinDimensions url={skinPreview || formData.skinUrl} />
               </div>

@@ -46,8 +46,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    // RÉCUPÉRATION DES NOUVEAUX CHAMPS : physique, mental, mcPseudo
-    const { id, rpName, age, lore, physique, mental, mcPseudo, isFinalSubmit, skinUrl } = await req.json();
+    // RÉCUPÉRATION DES CHAMPS (Ajout de taille et race)
+    const { id, rpName, age, lore, physique, mental, mcPseudo, isFinalSubmit, skinUrl, taille, race } = await req.json();
 
     // --- SÉCURITÉS & VALIDATIONS ---
     const cleanRpName = String(rpName).replace(/[0-9]/g, '').trim();
@@ -57,11 +57,16 @@ export async function POST(req: Request) {
       if (cleanRpName.length < 2) {
         return NextResponse.json({ error: "Nom RP invalide." }, { status: 400 });
       }
-      // MISE À JOUR SÉCURITÉ : 18 ANS MINIMUM
       if (isNaN(numericAge) || numericAge < 18) {
         return NextResponse.json({ error: "Âge invalide (Min. 18 ans)." }, { status: 400 });
       }
-      // VÉRIFICATION DES NOUVELLES ZONES SI VIDE
+      // VALIDATION NOUVEAUX CHAMPS
+      if (!taille || taille.trim().length === 0) {
+        return NextResponse.json({ error: "La taille est obligatoire." }, { status: 400 });
+      }
+      if (!race || race.trim().length === 0) {
+        return NextResponse.json({ error: "La race est obligatoire." }, { status: 400 });
+      }
       if (!physique || physique.trim().length === 0) {
         return NextResponse.json({ error: "La description physique est obligatoire." }, { status: 400 });
       }
@@ -71,7 +76,6 @@ export async function POST(req: Request) {
       if (!mcPseudo || mcPseudo.trim().length === 0) {
         return NextResponse.json({ error: "Le pseudo Minecraft est obligatoire." }, { status: 400 });
       }
-      // Vérification Lore TipTap
       if (!lore || (lore.content && lore.content.length === 0)) {
         return NextResponse.json({ error: "Le récit ne peut pas être vide." }, { status: 400 });
       }
@@ -88,7 +92,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Profil Discord non lié." }, { status: 400 });
     }
 
-    // Vérification des candidatures en attente
     const searchFilter: any = { 
       discordId: userInDb.discordId,
       status: "en_attente"
@@ -106,10 +109,11 @@ export async function POST(req: Request) {
     }
 
     // --- PRÉPARATION DU DOCUMENT ---
-    // On inclut physique, mental et mcPseudo dans le document envoyé à la DB
     const candidDocument: any = {
       rpName: cleanRpName.substring(0, 100),
       age: numericAge,
+      taille: taille || "",
+      race: race || "Humain",
       lore: lore, 
       physique: physique || "",
       mental: mental || "",
@@ -125,8 +129,6 @@ export async function POST(req: Request) {
 
     if (isFinalSubmit) {
       candidDocument.submittedAt = new Date();
-      
-      // LOGIQUE : Récupérer l'ancien motif si on modifie une candidature refusée
       if (id) {
         const existingCandid = await db.collection("candid").findOne({ 
           _id: new ObjectId(id),
@@ -153,7 +155,6 @@ export async function POST(req: Request) {
       if (isFinalSubmit) {
         await db.collection("candid").insertOne(candidDocument);
       } else {
-        // Pour les brouillons
         await db.collection("candid").updateOne(
           { discordId: userInDb.discordId, status: "brouillon" },
           { $set: candidDocument },
