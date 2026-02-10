@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -152,7 +152,6 @@ export default function CandidatureForm() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [currentRefusalReason, setCurrentRefusalReason] = useState<string | null>(null);
   
-  // Trigger pour update l'UI des boutons instantanément
   const [updateTrigger, setUpdateTrigger] = useState(0); 
 
   const [formData, setFormData] = useState({ 
@@ -166,12 +165,15 @@ export default function CandidatureForm() {
     skinUrl: '' 
   });
   const [skinPreview, setSkinPreview] = useState<string | null>(null);
-  // AJOUT : État pour détecter si le skin est en HD (512x512)
   const [isHighResSkin, setIsHighResSkin] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  // REFS pour l'auto-resize
+  const physiqueRef = useRef<HTMLTextAreaElement>(null);
+  const mentalRef = useRef<HTMLTextAreaElement>(null);
 
   const fetchCandidatures = async () => {
     try {
@@ -187,7 +189,7 @@ export default function CandidatureForm() {
 
   useEffect(() => { fetchCandidatures(); }, []);
 
-  // AJOUT : Vérification automatique des dimensions pour le message d'avertissement
+  // Check des dimensions du skin pour le message ticket
   useEffect(() => {
     const url = skinPreview || formData.skinUrl;
     if (!url) { 
@@ -196,7 +198,6 @@ export default function CandidatureForm() {
     }
     const img = new window.Image();
     img.onload = () => {
-      // Si l'image fait exactement 512x512, on active l'alerte ticket
       if (img.width === 512 && img.height === 512) {
         setIsHighResSkin(true);
       } else {
@@ -205,6 +206,23 @@ export default function CandidatureForm() {
     };
     img.src = url;
   }, [skinPreview, formData.skinUrl]);
+
+  // Effect pour ajuster la hauteur des textareas
+  useLayoutEffect(() => {
+    if (view === 'form') {
+      const adjust = (ref: React.RefObject<HTMLTextAreaElement | null>) => {
+        if (ref.current) {
+          ref.current.style.height = 'auto'; // Reset pour calcul correct
+          ref.current.style.height = `${ref.current.scrollHeight}px`;
+        }
+      };
+      // Petit délai pour s'assurer que le rendu est fait
+      setTimeout(() => {
+        adjust(physiqueRef);
+        adjust(mentalRef);
+      }, 0);
+    }
+  }, [view, formData.physique, formData.mental]); 
 
   const saveToLocal = useCallback(
     debounce((currentData: typeof formData, loreJson: any) => {
@@ -336,6 +354,13 @@ export default function CandidatureForm() {
     if (name === 'age' || name === 'taille') finalValue = value.replace(/[^0-9]/g, '');
     else if (name === 'rpName') finalValue = value.replace(/[0-9]/g, '');
     
+    // Auto-resize lors de la frappe
+    if (e.target.tagName === 'TEXTAREA') {
+        const target = e.target as HTMLTextAreaElement;
+        target.style.height = 'auto'; // Reset pour recalculer si on efface du texte
+        target.style.height = `${target.scrollHeight}px`;
+    }
+
     const newFormData = { ...formData, [name]: finalValue };
     setFormData(newFormData);
     setSaveStatus('saving');
@@ -578,18 +603,33 @@ export default function CandidatureForm() {
             <div className="space-y-12">
               <div className="space-y-2">
                 <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em] mb-4">Description Physique (Minimum 5 lignes)</label>
-                <textarea name="physique" value={formData.physique} onChange={handleInputChange} placeholder="Apparence, style vestimentaire, signes distinctifs..." className="w-full h-32 p-6 rounded-[1.5rem] text-white outline-none transition-all resize-none custom-scrollbar" />
+                <textarea 
+                  ref={physiqueRef}
+                  name="physique" 
+                  value={formData.physique} 
+                  onChange={handleInputChange} 
+                  placeholder="Apparence, style vestimentaire, signes distinctifs..." 
+                  className="w-full min-h-[128px] p-6 rounded-[1.5rem] text-white outline-none transition-all resize-none custom-scrollbar overflow-hidden" 
+                />
               </div>
               
               <div className="space-y-2">
                 <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em] mb-4">Description Mentale (Minimum 5 lignes)</label>
-                <textarea name="mental" value={formData.mental} onChange={handleInputChange} placeholder="Caractère, tempérament, psychologie, peurs..." className="w-full h-32 p-6 rounded-[1.5rem] text-white outline-none transition-all resize-none custom-scrollbar" />
+                <textarea 
+                  ref={mentalRef}
+                  name="mental" 
+                  value={formData.mental} 
+                  onChange={handleInputChange} 
+                  placeholder="Caractère, tempérament, psychologie, peurs..." 
+                  className="w-full min-h-[128px] p-6 rounded-[1.5rem] text-white outline-none transition-all resize-none custom-scrollbar overflow-hidden" 
+                />
               </div>
             </div>
 
             <div className="space-y-4">
               <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em]">Récit & Lore (Minimum 25 lignes)</label>
-              <div className="group relative min-h-[600px] flex flex-col border border-white/20 rounded-[2.5rem] bg-white/[0.05] focus-within:border-[#683892] focus-within:bg-black/40 transition-all overflow-hidden shadow-2xl">
+              {/* MODIF ICI : min-h-[600px] -> h-[600px] pour forcer le scrollbar */}
+              <div className="group relative h-[600px] flex flex-col border border-white/20 rounded-[2.5rem] bg-white/[0.05] focus-within:border-[#683892] focus-within:bg-black/40 transition-all overflow-hidden shadow-2xl">
                 <MenuBar editor={editor} />
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                   <EditorContent editor={editor} />
@@ -604,14 +644,14 @@ export default function CandidatureForm() {
                    <input name="mcPseudo" value={formData.mcPseudo} onChange={handleInputChange} required autoComplete="off" placeholder="Ex: Steve_64" className="w-full p-6 rounded-2xl text-white outline-none transition-all" />
                 </div>
                 <div className="space-y-4">
-                  <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em]">Fichier Apparence (.png) <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em]">Fichier Apparence (.png - Max 512x512) <span className="text-red-500">*</span></label>
                   <div className="relative group">
                     <input type="file" accept="image/png" onChange={handleFileChange} className="hidden" id="skin-upload" />
                     <label htmlFor="skin-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/20 rounded-[2rem] cursor-pointer hover:border-[#683892] hover:bg-[#683892]/10 transition-all text-center bg-black/40">
                       {isUploading ? <span className="animate-pulse text-[10px] font-black uppercase text-[#CBDBFC]">Analyse du fichier...</span> : <><span className="text-3xl mb-3">👔</span><span className="text-[10px] font-black uppercase text-neutral-400 group-hover:text-white transition-colors">Charger mon Skin</span></>}
                     </label>
                   </div>
-                  {/* AJOUT DU MESSAGE D'AVERTISSEMENT TICKET */}
+                  {/* Message Ticket pour les skins 512x512 */}
                   {isHighResSkin && (
                     <p className="text-[9px] text-center text-amber-500 font-black uppercase tracking-widest mt-2 animate-pulse">⚠️ Nécessite un ticket</p>
                   )}
