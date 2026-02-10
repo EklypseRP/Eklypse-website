@@ -5,7 +5,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
-import { Extension } from '@tiptap/core'; // Import nécessaire pour le fix du titre
+import { Extension } from '@tiptap/core';
 import SkinViewer3D from "../components/SkinViewer3D";
 // @ts-ignore
 import { FontSize } from 'tiptap-extension-font-size';
@@ -20,10 +20,6 @@ const FADE_IN_ANIMATION = `
   }
 `;
 
-/* MODIFICATION UI : Augmentation des contrastes pour l'accessibilité 
-   - Fond des inputs plus sombre et opaque (rgba(0,0,0,0.4)) au lieu de transparent
-   - Bordures plus visibles (0.2 au lieu de 0.1)
-*/
 const EDITOR_STYLES = `
   .tiptap-editor {
     background-color: transparent !important;
@@ -39,7 +35,7 @@ const EDITOR_STYLES = `
   .tiptap-editor p { margin-bottom: 1rem; line-height: 1.6; color: white !important; }
   
   .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(104, 56, 146, 0.5); border-radius: 10px; } /* Scrollbar un peu plus visible */
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(104, 56, 146, 0.5); border-radius: 10px; }
 
   input:-webkit-autofill,
   input:-webkit-autofill:hover, 
@@ -52,18 +48,18 @@ const EDITOR_STYLES = `
     transition: background-color 5000s ease-in-out 0s;
   }
   
-  /* Meilleur contraste pour les champs */
+  /* CONTRASTES RENFORCÉS POUR L'ACCESSIBILITÉ */
   input, textarea, select {
-    background-color: rgba(0, 0, 0, 0.4) !important; /* Fond sombre semi-opaque pour lisibilité */
+    background-color: rgba(0, 0, 0, 0.4) !important;
     color: white !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important; /* Bordure renforcée */
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
   }
 
   input:focus, textarea:focus, select:focus {
     background-color: rgba(0, 0, 0, 0.6) !important;
     border-color: #683892 !important;
     outline: none !important;
-    box-shadow: 0 0 0 1px rgba(104, 56, 146, 0.3); /* Légère lueur au focus */
+    box-shadow: 0 0 0 1px rgba(104, 56, 146, 0.3);
   }
 
   select option {
@@ -72,17 +68,15 @@ const EDITOR_STYLES = `
   }
 `;
 
-// Extension personnalisée pour forcer le retour en paragraphe après un titre
+// Extension pour quitter le mode Titre quand on fait Entrée
 const HeadingExitOnEnter = Extension.create({
   name: 'HeadingExitOnEnter',
   addKeyboardShortcuts() {
     return {
       Enter: () => {
-        // Si on est dans un titre (Heading), Entrée crée un nouveau paragraphe standard
         if (this.editor.isActive('heading')) {
-          return this.editor.commands.splitBlock() && this.editor.commands.setParagraph();
+          return this.editor.chain().focus().splitBlock().setParagraph().run();
         }
-        // Sinon comportement par défaut
         return false;
       },
     };
@@ -107,8 +101,16 @@ const SkinDimensions = ({ url }: { url: string | null | undefined }) => {
   );
 };
 
+// ToolbarButton avec transition rapide (75ms)
 const ToolbarButton = ({ onClick, isActive, children, title }: { onClick: () => void, isActive: boolean, children: React.ReactNode, title: string }) => (
-  <button type="button" onMouseDown={(e) => { e.preventDefault(); onClick(); }} title={title} className={`flex items-center justify-center min-w-[50px] h-[45px] px-3 rounded-xl border transition-all duration-300 ${isActive ? 'bg-[#683892] border-[#683892] text-white shadow-[0_0_15px_rgba(104,56,146,0.5)] scale-105' : 'bg-white/5 border-white/20 text-neutral-400 hover:text-white hover:bg-white/10'}`}>{children}</button>
+  <button 
+    type="button" 
+    onMouseDown={(e) => { e.preventDefault(); onClick(); }} 
+    title={title} 
+    className={`flex items-center justify-center min-w-[50px] h-[45px] px-3 rounded-xl border transition-all duration-75 ${isActive ? 'bg-[#683892] border-[#683892] text-white shadow-[0_0_15px_rgba(104,56,146,0.5)] scale-105' : 'bg-white/5 border-white/20 text-neutral-400 hover:text-white hover:bg-white/10'}`}
+  >
+    {children}
+  </button>
 );
 
 const MenuBar = ({ editor }: { editor: any }) => {
@@ -150,6 +152,9 @@ export default function CandidatureForm() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [currentRefusalReason, setCurrentRefusalReason] = useState<string | null>(null);
   
+  // Trigger pour update l'UI des boutons instantanément
+  const [updateTrigger, setUpdateTrigger] = useState(0); 
+
   const [formData, setFormData] = useState({ 
     rpName: '', 
     age: '', 
@@ -161,6 +166,8 @@ export default function CandidatureForm() {
     skinUrl: '' 
   });
   const [skinPreview, setSkinPreview] = useState<string | null>(null);
+  // AJOUT : État pour détecter si le skin est en HD (512x512)
+  const [isHighResSkin, setIsHighResSkin] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -180,6 +187,25 @@ export default function CandidatureForm() {
 
   useEffect(() => { fetchCandidatures(); }, []);
 
+  // AJOUT : Vérification automatique des dimensions pour le message d'avertissement
+  useEffect(() => {
+    const url = skinPreview || formData.skinUrl;
+    if (!url) { 
+      setIsHighResSkin(false); 
+      return; 
+    }
+    const img = new window.Image();
+    img.onload = () => {
+      // Si l'image fait exactement 512x512, on active l'alerte ticket
+      if (img.width === 512 && img.height === 512) {
+        setIsHighResSkin(true);
+      } else {
+        setIsHighResSkin(false);
+      }
+    };
+    img.src = url;
+  }, [skinPreview, formData.skinUrl]);
+
   const saveToLocal = useCallback(
     debounce((currentData: typeof formData, loreJson: any) => {
       const draftData = { ...currentData, lore: loreJson, timestamp: Date.now() };
@@ -192,22 +218,21 @@ export default function CandidatureForm() {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [2], // On configure le heading pour être propre
-        },
-      }),
+      StarterKit.configure({ heading: { levels: [2] } }),
       TextStyle, 
       FontSize, 
       lineHeight, 
       Underline,
-      HeadingExitOnEnter // Ajout de notre correctif ici
+      HeadingExitOnEnter
     ],
     immediatelyRender: false,
     editorProps: { 
       attributes: { 
         class: 'tiptap-editor focus:outline-none p-10 text-white prose prose-invert max-w-none text-base outline-none' 
       } 
+    },
+    onTransaction: () => {
+      setUpdateTrigger(prev => prev + 1);
     },
     onUpdate: ({ editor }) => {
       setSaveStatus('saving');
@@ -564,7 +589,6 @@ export default function CandidatureForm() {
 
             <div className="space-y-4">
               <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em]">Récit & Lore (Minimum 25 lignes)</label>
-              {/* Le fond de l'éditeur est légèrement distinct (bg-white/[0.05]) pour mieux délimiter la zone de saisie */}
               <div className="group relative min-h-[600px] flex flex-col border border-white/20 rounded-[2.5rem] bg-white/[0.05] focus-within:border-[#683892] focus-within:bg-black/40 transition-all overflow-hidden shadow-2xl">
                 <MenuBar editor={editor} />
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -580,13 +604,17 @@ export default function CandidatureForm() {
                    <input name="mcPseudo" value={formData.mcPseudo} onChange={handleInputChange} required autoComplete="off" placeholder="Ex: Steve_64" className="w-full p-6 rounded-2xl text-white outline-none transition-all" />
                 </div>
                 <div className="space-y-4">
-                  <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em]">Fichier Apparence (.png - Max 512x512) <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em]">Fichier Apparence (.png) <span className="text-red-500">*</span></label>
                   <div className="relative group">
                     <input type="file" accept="image/png" onChange={handleFileChange} className="hidden" id="skin-upload" />
                     <label htmlFor="skin-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/20 rounded-[2rem] cursor-pointer hover:border-[#683892] hover:bg-[#683892]/10 transition-all text-center bg-black/40">
                       {isUploading ? <span className="animate-pulse text-[10px] font-black uppercase text-[#CBDBFC]">Analyse du fichier...</span> : <><span className="text-3xl mb-3">👔</span><span className="text-[10px] font-black uppercase text-neutral-400 group-hover:text-white transition-colors">Charger mon Skin</span></>}
                     </label>
                   </div>
+                  {/* AJOUT DU MESSAGE D'AVERTISSEMENT TICKET */}
+                  {isHighResSkin && (
+                    <p className="text-[9px] text-center text-amber-500 font-black uppercase tracking-widest mt-2 animate-pulse">⚠️ Nécessite un ticket</p>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col items-center gap-4">
