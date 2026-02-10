@@ -75,6 +75,9 @@ export default function AdminCandidaturesPage() {
   const [selectedUserKey, setSelectedUserKey] = useState<string | null>(null);
   const [selectedCandidId, setSelectedCandidId] = useState<string | null>(null);
 
+  // AJOUT : État pour détecter si le skin est en HD
+  const [isHighResSkin, setIsHighResSkin] = useState(false);
+
   const [refusalModal, setRefusalModal] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
   const [reason, setReason] = useState('');
 
@@ -150,6 +153,20 @@ export default function AdminCandidaturesPage() {
     currentFolder?.candidatures.find((c: any) => c._id === selectedCandidId),
     [currentFolder, selectedCandidId]
   );
+
+  // AJOUT : Vérification des dimensions du skin de la candidature active
+  useEffect(() => {
+    if (!activeCandidature?.skinUrl) {
+      setIsHighResSkin(false);
+      return;
+    }
+    const img = new window.Image();
+    img.onload = () => {
+      // Si 512x512 exact, on active l'alerte
+      setIsHighResSkin(img.width === 512 && img.height === 512);
+    };
+    img.src = activeCandidature.skinUrl;
+  }, [activeCandidature]);
 
   if (loading) return <div className="h-screen flex items-center justify-center bg-[#0A0612] text-neutral-500 font-black tracking-[0.5em] animate-pulse uppercase text-xs">Lecture du Codex...</div>;
 
@@ -297,13 +314,24 @@ export default function AdminCandidaturesPage() {
                     </div>
                   )}
 
-                  {/* AJOUT : BANDEAU D'ALERTE POUR LA RACE "AUTRE" */}
+                  {/* BANDEAU D'ALERTE POUR LA RACE "AUTRE" */}
                   {activeCandidature.race === 'Autre' && activeCandidature.status === 'en_attente' && (
                     <div className="mb-8 p-6 bg-amber-500/5 border border-amber-500/20 rounded-[2rem] flex gap-5 items-center shadow-lg">
                       <div className="text-2xl">🎫</div>
                       <div>
                         <span className="block text-[10px] text-amber-500 font-black uppercase tracking-widest mb-1">Race Particulière détectée</span>
                         <p className="text-xs text-neutral-400 italic">Un ticket doit être ouvert par le joueur sous peu pour valider les spécificités de cette race.</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AJOUT : BANDEAU D'ALERTE POUR SKIN HD (512x512) */}
+                  {isHighResSkin && activeCandidature.status === 'en_attente' && (
+                    <div className="mb-8 p-6 bg-amber-500/5 border border-amber-500/20 rounded-[2rem] flex gap-5 items-center shadow-lg">
+                      <div className="text-2xl">🎫</div>
+                      <div>
+                        <span className="block text-[10px] text-amber-500 font-black uppercase tracking-widest mb-1">Skin HD (512x512) détecté</span>
+                        <p className="text-xs text-neutral-400 italic">Un ticket doit être ouvert par le joueur sous peu pour valider les spécificités de ce skin.</p>
                       </div>
                     </div>
                   )}
