@@ -68,7 +68,6 @@ const EDITOR_STYLES = `
   }
 `;
 
-// Extension pour quitter le mode Titre quand on fait Entrée
 const HeadingExitOnEnter = Extension.create({
   name: 'HeadingExitOnEnter',
   addKeyboardShortcuts() {
@@ -101,7 +100,6 @@ const SkinDimensions = ({ url }: { url: string | null | undefined }) => {
   );
 };
 
-// ToolbarButton avec transition rapide (75ms)
 const ToolbarButton = ({ onClick, isActive, children, title }: { onClick: () => void, isActive: boolean, children: React.ReactNode, title: string }) => (
   <button 
     type="button" 
@@ -149,9 +147,15 @@ export default function CandidatureForm() {
   const [history, setHistory] = useState<any[]>([]);
   const [draft, setDraft] = useState<any | null>(null);
   const [selectedCandid, setSelectedCandid] = useState<any | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [currentRefusalReason, setCurrentRefusalReason] = useState<string | null>(null);
   
+  // NOUVEAU : Référence pour le mode édition afin de bloquer le brouillon instantanément
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const editingIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    editingIdRef.current = editingId;
+  }, [editingId]);
+
+  const [currentRefusalReason, setCurrentRefusalReason] = useState<string | null>(null);
   const [updateTrigger, setUpdateTrigger] = useState(0); 
 
   const [formData, setFormData] = useState({ 
@@ -171,7 +175,6 @@ export default function CandidatureForm() {
   const [isUploading, setIsUploading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
-  // REFS pour l'auto-resize
   const physiqueRef = useRef<HTMLTextAreaElement>(null);
   const mentalRef = useRef<HTMLTextAreaElement>(null);
 
@@ -189,7 +192,6 @@ export default function CandidatureForm() {
 
   useEffect(() => { fetchCandidatures(); }, []);
 
-  // Check des dimensions du skin pour le message ticket
   useEffect(() => {
     const url = skinPreview || formData.skinUrl;
     if (!url) { 
@@ -207,16 +209,14 @@ export default function CandidatureForm() {
     img.src = url;
   }, [skinPreview, formData.skinUrl]);
 
-  // Effect pour ajuster la hauteur des textareas
   useLayoutEffect(() => {
     if (view === 'form') {
       const adjust = (ref: React.RefObject<HTMLTextAreaElement | null>) => {
         if (ref.current) {
-          ref.current.style.height = 'auto'; // Reset pour calcul correct
+          ref.current.style.height = 'auto'; 
           ref.current.style.height = `${ref.current.scrollHeight}px`;
         }
       };
-      // Petit délai pour s'assurer que le rendu est fait
       setTimeout(() => {
         adjust(physiqueRef);
         adjust(mentalRef);
@@ -224,8 +224,11 @@ export default function CandidatureForm() {
     }
   }, [view, formData.physique, formData.mental]); 
 
+  // MODIFICATION ICI : On vérifie si on est en train d'éditer une ancienne candidature
   const saveToLocal = useCallback(
     debounce((currentData: typeof formData, loreJson: any) => {
+      if (editingIdRef.current) return; // Empêche la sauvegarde si c'est une correction d'ancienne candidature
+
       const draftData = { ...currentData, lore: loreJson, timestamp: Date.now() };
       localStorage.setItem('eklypse_candidature_draft', JSON.stringify(draftData));
       setDraft(draftData);
@@ -253,8 +256,11 @@ export default function CandidatureForm() {
       setUpdateTrigger(prev => prev + 1);
     },
     onUpdate: ({ editor }) => {
-      setSaveStatus('saving');
-      saveToLocal(formData, editor.getJSON());
+      // Seulement si c'est une nouvelle candidature
+      if (!editingIdRef.current) {
+        setSaveStatus('saving');
+        saveToLocal(formData, editor.getJSON());
+      }
     }
   });
 
@@ -293,7 +299,10 @@ export default function CandidatureForm() {
       if (result.success) {
         const newFormData = { ...formData, skinUrl: result.url };
         setFormData(newFormData);
-        saveToLocal(newFormData, editor?.getJSON());
+        // Seulement si nouvelle candidature
+        if (!editingIdRef.current) {
+          saveToLocal(newFormData, editor?.getJSON());
+        }
       }
     } catch (err) { 
       alert("Erreur upload"); 
@@ -354,17 +363,20 @@ export default function CandidatureForm() {
     if (name === 'age' || name === 'taille') finalValue = value.replace(/[^0-9]/g, '');
     else if (name === 'rpName') finalValue = value.replace(/[0-9]/g, '');
     
-    // Auto-resize lors de la frappe
     if (e.target.tagName === 'TEXTAREA') {
         const target = e.target as HTMLTextAreaElement;
-        target.style.height = 'auto'; // Reset pour recalculer si on efface du texte
+        target.style.height = 'auto'; 
         target.style.height = `${target.scrollHeight}px`;
     }
 
     const newFormData = { ...formData, [name]: finalValue };
     setFormData(newFormData);
-    setSaveStatus('saving');
-    saveToLocal(newFormData, editor?.getJSON());
+    
+    // Seulement si nouvelle candidature
+    if (!editingIdRef.current) {
+      setSaveStatus('saving');
+      saveToLocal(newFormData, editor?.getJSON());
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -628,7 +640,6 @@ export default function CandidatureForm() {
 
             <div className="space-y-4">
               <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em]">Récit & Lore (Minimum 25 lignes)</label>
-              {/* MODIF ICI : min-h-[600px] -> h-[600px] pour forcer le scrollbar */}
               <div className="group relative h-[600px] flex flex-col border border-white/20 rounded-[2.5rem] bg-white/[0.05] focus-within:border-[#683892] focus-within:bg-black/40 transition-all overflow-hidden shadow-2xl">
                 <MenuBar editor={editor} />
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -651,7 +662,6 @@ export default function CandidatureForm() {
                       {isUploading ? <span className="animate-pulse text-[10px] font-black uppercase text-[#CBDBFC]">Analyse du fichier...</span> : <><span className="text-3xl mb-3">👔</span><span className="text-[10px] font-black uppercase text-neutral-400 group-hover:text-white transition-colors">Charger mon Skin</span></>}
                     </label>
                   </div>
-                  {/* Message Ticket pour les skins 512x512 */}
                   {isHighResSkin && (
                     <p className="text-[9px] text-center text-amber-500 font-black uppercase tracking-widest mt-2 animate-pulse">⚠️ Nécessite un ticket</p>
                   )}
