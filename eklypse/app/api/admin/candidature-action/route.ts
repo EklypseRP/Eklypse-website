@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     const botToken = process.env.DISCORD_BOT_TOKEN; 
 
     // On n'envoie le message que si la candidature passe à un statut finalisé (validé ou refusé)
-    if (botToken && applicantDiscordId && (status === 'valide' || status === 'refuse')) {
+    if (botToken && applicantDiscordId && (status === 'accepte' || status === 'refuse')) {
       const channelId = "1474101725366456382";
       const siteUrl = process.env.NEXTAUTH_URL || "https://eklypse.xyz/"; // Lien vers ton site
       
