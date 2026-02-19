@@ -175,17 +175,17 @@ export default function CandidatureForm() {
   const physiqueRef = useRef<HTMLTextAreaElement>(null);
   const mentalRef = useRef<HTMLTextAreaElement>(null);
 
-  // === AJOUT DES REFS POUR SÉCURISER L'ENREGISTREMENT DU BROUILLON ===
+  // === REFS POUR SÉCURISER L'ENREGISTREMENT ===
   const viewRef = useRef(view);
   const editingIdRef = useRef(editingId);
   const formDataRef = useRef(formData);
+  const isEditorLoadingRef = useRef(false); // Verrou anti-sauvegarde automatique de Tiptap
 
   useEffect(() => { 
     viewRef.current = view; 
     editingIdRef.current = editingId;
     formDataRef.current = formData;
   }, [view, editingId, formData]);
-  // ===================================================================
 
   const fetchCandidatures = async () => {
     try {
@@ -201,7 +201,6 @@ export default function CandidatureForm() {
 
   useEffect(() => { fetchCandidatures(); }, []);
 
-  // Check des dimensions du skin pour le message ticket
   useEffect(() => {
     const url = skinPreview || formData.skinUrl;
     if (!url) { 
@@ -219,16 +218,14 @@ export default function CandidatureForm() {
     img.src = url;
   }, [skinPreview, formData.skinUrl]);
 
-  // Effect pour ajuster la hauteur des textareas
   useLayoutEffect(() => {
     if (view === 'form') {
       const adjust = (ref: React.RefObject<HTMLTextAreaElement | null>) => {
         if (ref.current) {
-          ref.current.style.height = 'auto'; // Reset pour calcul correct
+          ref.current.style.height = 'auto';
           ref.current.style.height = `${ref.current.scrollHeight}px`;
         }
       };
-      // Petit délai pour s'assurer que le rendu est fait
       setTimeout(() => {
         adjust(physiqueRef);
         adjust(mentalRef);
@@ -238,8 +235,8 @@ export default function CandidatureForm() {
 
   const saveToLocal = useCallback(
     debounce((currentData: typeof formData, loreJson: any) => {
-      // SÉCURITÉ : On ne sauvegarde QUE si on est sur le formulaire ET que c'est une NOUVELLE candidature (pas d'ID d'édition)
-      if (viewRef.current !== 'form' || editingIdRef.current !== null) return;
+      // SÉCURITÉ : On ne sauvegarde QUE si on est sur le formulaire ET que c'est une NOUVELLE candidature (pas d'ID)
+      if (viewRef.current !== 'form' || editingIdRef.current) return;
 
       const draftData = { ...currentData, lore: loreJson, timestamp: Date.now() };
       localStorage.setItem('eklypse_candidature_draft', JSON.stringify(draftData));
@@ -268,13 +265,28 @@ export default function CandidatureForm() {
       setUpdateTrigger(prev => prev + 1);
     },
     onUpdate: ({ editor }) => {
-      // On déclenche l'affichage 'saving' uniquement si on a le droit de sauvegarder
-      if (viewRef.current === 'form' && editingIdRef.current === null) {
+      // On bloque si l'éditeur est en train de charger du texte informatiquement
+      if (isEditorLoadingRef.current) return;
+
+      if (viewRef.current === 'form' && !editingIdRef.current) {
         setSaveStatus('saving');
         saveToLocal(formDataRef.current, editor.getJSON());
       }
     }
   });
+
+  // Fonction sûre pour modifier le texte de l'éditeur sans déclencher de sauvegarde fantôme
+  const safeSetContent = (content: any, isClear = false) => {
+    if (!editor) return;
+    isEditorLoadingRef.current = true; // On active le verrou
+    if (isClear) {
+      editor.commands.clearContent();
+    } else {
+      editor.commands.setContent(content || '');
+    }
+    // On libère le verrou peu après
+    setTimeout(() => { isEditorLoadingRef.current = false; }, 100);
+  };
 
   const checkImageDimensions = (file: File): Promise<{width: number, height: number}> => {
     return new Promise((resolve) => {
@@ -311,8 +323,7 @@ export default function CandidatureForm() {
       if (result.success) {
         const newFormData = { ...formData, skinUrl: result.url };
         setFormData(newFormData);
-        // Sauvegarde autorisée seulement si nouvelle candidature
-        if (view === 'form' && editingId === null) {
+        if (view === 'form' && !editingId) {
           saveToLocal(newFormData, editor?.getJSON());
         }
       }
@@ -324,7 +335,8 @@ export default function CandidatureForm() {
   };
 
   const handleEditApplication = (c: any) => {
-    setEditingId(c._id);
+    // Force une string pour éviter que ça soit évalué comme null
+    setEditingId(c._id || "edit_mode"); 
     setCurrentRefusalReason(c.refusalReason || null);
     setFormData({ 
       rpName: c.rpName || '', 
@@ -337,7 +349,7 @@ export default function CandidatureForm() {
       skinUrl: c.skinUrl || '' 
     });
     setSkinPreview(c.skinUrl || null);
-    if (editor) editor.commands.setContent(c.lore || '');
+    safeSetContent(c.lore);
     setView('form');
   };
 
@@ -356,7 +368,7 @@ export default function CandidatureForm() {
       skinUrl: draft.skinUrl || '' 
     });
     setSkinPreview(draft.skinUrl || null);
-    if (editor) editor.commands.setContent(draft.lore || '');
+    safeSetContent(draft.lore);
     setView('form');
   };
 
@@ -375,18 +387,16 @@ export default function CandidatureForm() {
     if (name === 'age' || name === 'taille') finalValue = value.replace(/[^0-9]/g, '');
     else if (name === 'rpName') finalValue = value.replace(/[0-9]/g, '');
     
-    // Auto-resize lors de la frappe
     if (e.target.tagName === 'TEXTAREA') {
         const target = e.target as HTMLTextAreaElement;
-        target.style.height = 'auto'; // Reset pour recalculer si on efface du texte
+        target.style.height = 'auto'; 
         target.style.height = `${target.scrollHeight}px`;
     }
 
     const newFormData = { ...formData, [name]: finalValue };
     setFormData(newFormData);
     
-    // On ne sauvegarde en brouillon que si c'est une nouvelle candidature
-    if (view === 'form' && editingId === null) {
+    if (view === 'form' && !editingId) {
       setSaveStatus('saving');
       saveToLocal(newFormData, editor?.getJSON());
     }
@@ -455,7 +465,7 @@ export default function CandidatureForm() {
                 setCurrentRefusalReason(null);
                 setFormData({ rpName: '', age: '', taille: '', race: 'Humain', physique: '', mental: '', mcPseudo: '', skinUrl: '' });
                 setSkinPreview(null);
-                editor?.commands.clearContent();
+                safeSetContent(null, true);
                 setView('form');
               }}
               disabled={history.some(c => c.status === 'en_attente')}
@@ -477,7 +487,13 @@ export default function CandidatureForm() {
             ) : (
               history.map((c) => (
                 <div key={c._id} 
-                  onClick={() => c.status !== 'refuse' && (setSelectedCandid(c), editor?.commands.setContent(c.lore), setView('details'))}
+                  onClick={() => {
+                    if (c.status !== 'refuse') {
+                      setSelectedCandid(c);
+                      safeSetContent(c.lore);
+                      setView('details');
+                    }
+                  }}
                   className={`group bg-white/[0.05] border border-white/10 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg transition-all 
                     ${c.status === 'refuse' ? 'cursor-default opacity-90' : 'cursor-pointer hover:bg-white/[0.08] hover:border-white/20'}`}
                 >
