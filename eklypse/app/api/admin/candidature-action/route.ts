@@ -44,42 +44,42 @@ export async function POST(req: Request) {
       }
     );
 
-    // 4. ENVOI DU MESSAGE DISCORD
+    // 4. ENVOI DU MESSAGE DISCORD ET AJOUT DE ROLE
     // Note : On suppose que l'ID Discord du joueur est stocké dans le champ `discordId` de la candidature
     const applicantDiscordId = candidature.discordId; 
     const botToken = process.env.DISCORD_BOT_TOKEN; 
-    const guildId = process.env.DISCORD_GUILD_ID;
+    const guildId = process.env.DISCORD_GUILD_ID; // Ajout de l'ID du serveur manquant
 
     // On n'envoie le message que si la candidature passe à un statut finalisé (validé ou refusé)
-    if (botToken && applicantDiscordId) {
-      // --- A. ENVOI DU MESSAGE ---
-      if (status === 'accepte' || status === 'refuse') {
-        const channelId = "1474101725366456382";
-        const siteUrl = process.env.NEXTAUTH_URL || "https://ton-site.com";
-        
-        const message = `Salut <@${applicantDiscordId}> ! Ta candidature a été traitée par notre équipe de recrutement. Rends-toi vite sur le site d'Eklypse pour découvrir la réponse : ${siteUrl}\nSi tu as la moindre question suite à cette décision, n'hésite pas à ouvrir un ticket recrutement !`;
+    if (botToken && applicantDiscordId && (status === 'accepte' || status === 'refuse')) {
+      const channelId = "1474101725366456382";
+      const siteUrl = process.env.NEXTAUTH_URL || "https://eklypse.xyz/"; // Lien vers ton site
+      
+      const message = `Salut <@${applicantDiscordId}> !\nLe status de ta candidature a été modifié, rends-toi sur le site pour voir cette modification : ${siteUrl}\nSi tu as la moindre question suite à ce changement, n'hésite pas à ouvrir un ticket recrutement !`;
 
-        await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bot ${botToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ content: message }),
-        }).catch((err) => console.error("Erreur message Discord:", err));
-      }
+      // Requête HTTP vers l'API de Discord
+      await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bot ${botToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content: message,
+        }),
+      }).catch((err) => console.error("Erreur lors de l'envoi du message Discord:", err));
+    }
 
-      // --- B. AJOUT DU RÔLE (Seulement si accepté) ---
-      if ((status === 'accepte') && guildId) {
-        const roleId = "1474097354071343286";
+    // On ajoute le rôle si la candidature est acceptée
+    if (botToken && applicantDiscordId && guildId && (status === 'accepte' || status === 'valide')) {
+      const roleId = "1474097354071343286";
 
-        await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${applicantDiscordId}/roles/${roleId}`, {
-          method: "PUT", // PUT est la méthode requise par Discord pour ajouter un rôle
-          headers: {
-            "Authorization": `Bot ${botToken}`,
-          },
-        }).catch((err) => console.error("Erreur ajout de rôle Discord:", err));
-      }
+      await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${applicantDiscordId}/roles/${roleId}`, {
+        method: "PUT", // PUT est la méthode requise par Discord pour ajouter un rôle
+        headers: {
+          "Authorization": `Bot ${botToken}`,
+        },
+      }).catch((err) => console.error("Erreur ajout de rôle Discord:", err));
     }
 
     return NextResponse.json({ success: true });
