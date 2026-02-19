@@ -68,6 +68,7 @@ const EDITOR_STYLES = `
   }
 `;
 
+// Extension pour quitter le mode Titre quand on fait Entrée
 const HeadingExitOnEnter = Extension.create({
   name: 'HeadingExitOnEnter',
   addKeyboardShortcuts() {
@@ -100,6 +101,7 @@ const SkinDimensions = ({ url }: { url: string | null | undefined }) => {
   );
 };
 
+// ToolbarButton avec transition rapide (75ms)
 const ToolbarButton = ({ onClick, isActive, children, title }: { onClick: () => void, isActive: boolean, children: React.ReactNode, title: string }) => (
   <button 
     type="button" 
@@ -147,15 +149,9 @@ export default function CandidatureForm() {
   const [history, setHistory] = useState<any[]>([]);
   const [draft, setDraft] = useState<any | null>(null);
   const [selectedCandid, setSelectedCandid] = useState<any | null>(null);
-  
-  // NOUVEAU : Référence pour le mode édition afin de bloquer le brouillon instantanément
   const [editingId, setEditingId] = useState<string | null>(null);
-  const editingIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    editingIdRef.current = editingId;
-  }, [editingId]);
-
   const [currentRefusalReason, setCurrentRefusalReason] = useState<string | null>(null);
+  
   const [updateTrigger, setUpdateTrigger] = useState(0); 
 
   const [formData, setFormData] = useState({ 
@@ -175,8 +171,21 @@ export default function CandidatureForm() {
   const [isUploading, setIsUploading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
+  // REFS pour l'auto-resize
   const physiqueRef = useRef<HTMLTextAreaElement>(null);
   const mentalRef = useRef<HTMLTextAreaElement>(null);
+
+  // === AJOUT DES REFS POUR SÉCURISER L'ENREGISTREMENT DU BROUILLON ===
+  const viewRef = useRef(view);
+  const editingIdRef = useRef(editingId);
+  const formDataRef = useRef(formData);
+
+  useEffect(() => { 
+    viewRef.current = view; 
+    editingIdRef.current = editingId;
+    formDataRef.current = formData;
+  }, [view, editingId, formData]);
+  // ===================================================================
 
   const fetchCandidatures = async () => {
     try {
@@ -192,6 +201,7 @@ export default function CandidatureForm() {
 
   useEffect(() => { fetchCandidatures(); }, []);
 
+  // Check des dimensions du skin pour le message ticket
   useEffect(() => {
     const url = skinPreview || formData.skinUrl;
     if (!url) { 
@@ -209,14 +219,16 @@ export default function CandidatureForm() {
     img.src = url;
   }, [skinPreview, formData.skinUrl]);
 
+  // Effect pour ajuster la hauteur des textareas
   useLayoutEffect(() => {
     if (view === 'form') {
       const adjust = (ref: React.RefObject<HTMLTextAreaElement | null>) => {
         if (ref.current) {
-          ref.current.style.height = 'auto'; 
+          ref.current.style.height = 'auto'; // Reset pour calcul correct
           ref.current.style.height = `${ref.current.scrollHeight}px`;
         }
       };
+      // Petit délai pour s'assurer que le rendu est fait
       setTimeout(() => {
         adjust(physiqueRef);
         adjust(mentalRef);
@@ -224,10 +236,10 @@ export default function CandidatureForm() {
     }
   }, [view, formData.physique, formData.mental]); 
 
-  // MODIFICATION ICI : On vérifie si on est en train d'éditer une ancienne candidature
   const saveToLocal = useCallback(
     debounce((currentData: typeof formData, loreJson: any) => {
-      if (editingIdRef.current) return; // Empêche la sauvegarde si c'est une correction d'ancienne candidature
+      // SÉCURITÉ : On ne sauvegarde QUE si on est sur le formulaire ET que c'est une NOUVELLE candidature (pas d'ID d'édition)
+      if (viewRef.current !== 'form' || editingIdRef.current !== null) return;
 
       const draftData = { ...currentData, lore: loreJson, timestamp: Date.now() };
       localStorage.setItem('eklypse_candidature_draft', JSON.stringify(draftData));
@@ -256,10 +268,10 @@ export default function CandidatureForm() {
       setUpdateTrigger(prev => prev + 1);
     },
     onUpdate: ({ editor }) => {
-      // Seulement si c'est une nouvelle candidature
-      if (!editingIdRef.current) {
+      // On déclenche l'affichage 'saving' uniquement si on a le droit de sauvegarder
+      if (viewRef.current === 'form' && editingIdRef.current === null) {
         setSaveStatus('saving');
-        saveToLocal(formData, editor.getJSON());
+        saveToLocal(formDataRef.current, editor.getJSON());
       }
     }
   });
@@ -299,8 +311,8 @@ export default function CandidatureForm() {
       if (result.success) {
         const newFormData = { ...formData, skinUrl: result.url };
         setFormData(newFormData);
-        // Seulement si nouvelle candidature
-        if (!editingIdRef.current) {
+        // Sauvegarde autorisée seulement si nouvelle candidature
+        if (view === 'form' && editingId === null) {
           saveToLocal(newFormData, editor?.getJSON());
         }
       }
@@ -363,17 +375,18 @@ export default function CandidatureForm() {
     if (name === 'age' || name === 'taille') finalValue = value.replace(/[^0-9]/g, '');
     else if (name === 'rpName') finalValue = value.replace(/[0-9]/g, '');
     
+    // Auto-resize lors de la frappe
     if (e.target.tagName === 'TEXTAREA') {
         const target = e.target as HTMLTextAreaElement;
-        target.style.height = 'auto'; 
+        target.style.height = 'auto'; // Reset pour recalculer si on efface du texte
         target.style.height = `${target.scrollHeight}px`;
     }
 
     const newFormData = { ...formData, [name]: finalValue };
     setFormData(newFormData);
     
-    // Seulement si nouvelle candidature
-    if (!editingIdRef.current) {
+    // On ne sauvegarde en brouillon que si c'est une nouvelle candidature
+    if (view === 'form' && editingId === null) {
       setSaveStatus('saving');
       saveToLocal(newFormData, editor?.getJSON());
     }
