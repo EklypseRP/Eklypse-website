@@ -163,6 +163,15 @@ export async function POST(req: Request) {
       }
     }
 
+    // --- SUPPRESSION DES BROUILLONS ---
+    // Si la candidature est soumise de façon finale, on supprime tous les brouillons en BDD
+    if (isFinalSubmit) {
+      await db.collection("candid").deleteMany({
+        discordId: userInDb.discordId,
+        status: "brouillon"
+      });
+    }
+
     return NextResponse.json({ 
       success: true, 
       status: candidDocument.status 
