@@ -54,7 +54,7 @@ export async function POST(req: Request) {
       const channelId = "1474101725366456382";
       const siteUrl = process.env.NEXTAUTH_URL || "https://eklypse.xyz/"; // Lien vers ton site
       
-      const message = `Salut <@${applicantDiscordId}> ! Ta candidature a été traitée par notre équipe de recrutement. Rends-toi vite sur le site d'Eklypse pour découvrir la réponse : ${siteUrl}\nSi tu as la moindre question suite à cette décision, n'hésite pas à ouvrir un ticket recrutement !`;
+      const message = `Salut <@${applicantDiscordId}> !\n Le status de ta candidature a été modifié, rends-toi sur le site d'Eklypse pour voir ce changement : ${siteUrl}\nSi tu as la moindre question suite à cette décision, n'hésite pas à ouvrir un ticket recrutement !`;
 
       // Requête HTTP vers l'API de Discord
       await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
