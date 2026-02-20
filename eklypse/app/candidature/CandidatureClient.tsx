@@ -68,12 +68,10 @@ export default function CandidatureClient({ user }: { user: any }) {
     }}>
       <style dangerouslySetInnerHTML={{ __html: FADE_IN_ANIMATION }} />
       
-      {/* WRAPPER GLOBAL ANIMÉ */}
       <div 
         style={{ animation: 'smoothFadeIn 0.8s ease-in-out forwards' }}
         className="w-full max-w-6xl flex flex-col items-center"
       >
-        {/* HEADER HORS DE LA CARTE (AU DESSUS) */}
         <header className="mb-10 text-center flex flex-col items-center w-full">
           <h2 
             style={{ 

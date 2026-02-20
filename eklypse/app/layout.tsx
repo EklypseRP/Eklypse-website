@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://eklypse.xyz'),
+  alternates: {
+    canonical: '/',
+  },
   title: {
     default: "Eklypse | Serveur Minecraft MMORPG Médiéval-Fantasy",
     template: "%s | Eklypse",

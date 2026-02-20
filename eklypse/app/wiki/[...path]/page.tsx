@@ -5,7 +5,6 @@ import MarkdownRenderer from '@/app/components/MarkdownRenderer';
 import WikiSidebar from '@/app/components/WikiSidebar';
 import { ArticleCard, CategoryCard, BackButton } from '../WikiClientComponents';
 
-// Animation assouplie : mouvement réduit (4px au lieu de 8px) et durée plus longue
 const FADE_IN_ANIMATION = `
   @keyframes wikiFadeIn {
     from { 
@@ -35,12 +34,33 @@ export async function generateMetadata({ params }: { params: Promise<{ path: str
   return {
     title: title,
     description: description,
+    alternates: {
+      canonical: `/wiki/${pathSegments.join('/')}`,
+    },
     openGraph: {
       title: `${title} | Wiki Eklypse`,
       description: description,
       type: 'article',
     },
   };
+}
+
+// Fonction pour accélérer le wiki (Pré-génération statique)
+export async function generateStaticParams() {
+  const tree = getWikiTree();
+  const paths: { path: string[] }[] = [];
+
+  function extractPaths(nodes: WikiNode[]) {
+    nodes.forEach((node) => {
+      paths.push({ path: node.path.split('/') });
+      if (node.children) {
+        extractPaths(node.children);
+      }
+    });
+  }
+
+  extractPaths(tree);
+  return paths;
 }
 
 export default async function WikiDynamicPage({ params }: { params: Promise<{ path: string[] }> }) {
@@ -76,7 +96,6 @@ export default async function WikiDynamicPage({ params }: { params: Promise<{ pa
         flex: 1, 
         minWidth: 0, 
         padding: '1.5rem clamp(1rem, 5vw, 4rem) 6rem',
-        // Transition plus lente (0.8s) et courbe ease-in-out pour plus de douceur
         animation: 'wikiFadeIn 0.8s ease-in-out forwards'
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>

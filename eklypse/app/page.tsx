@@ -17,7 +17,7 @@ const COLORS = {
   discordBlueDark: '#4752C4',
 };
 
-// RÉGLAGE DE L'ANIMATION (Harmonisé avec le Wiki)
+// RÉGLAGE DE L'ANIMATION
 const FADE_IN_ANIMATION = `
   @keyframes smoothFadeIn {
     from { 
@@ -114,10 +114,8 @@ export default function EklypseWebsite() {
       color: COLORS.lightText,
       transition: 'background 0.3s ease'
     }}>
-      {/* Injection de l'animation CSS */}
       <style dangerouslySetInnerHTML={{ __html: FADE_IN_ANIMATION }} />
       
-      {/* Application de l'animation sur le conteneur principal */}
       <main style={{ 
         paddingTop: '6rem', 
         paddingBottom: '4rem',
@@ -398,6 +396,7 @@ const DiscordButton: React.FC = () => {
       href="https://discord.gg/67H3ccmvvW"
       target="_blank"
       rel="noopener noreferrer"
+      aria-label="Rejoindre le serveur Discord officiel d'Eklypse"
       style={{
         display: 'inline-flex',
         alignItems: 'center',

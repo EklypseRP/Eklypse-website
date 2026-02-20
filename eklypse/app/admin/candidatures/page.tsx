@@ -294,7 +294,7 @@ export default function AdminCandidaturesPage() {
                 <div style={{ background: COLORS.cardBg, border: `1px solid ${COLORS.cardBorder}`, backdropFilter: 'blur(20px)' }} className="p-10 rounded-[3rem] shadow-2xl w-full">
                   <div className="flex justify-between items-center mb-10 pb-6 border-b border-white/5">
                     <span className="px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-[9px] font-black text-neutral-400 uppercase tracking-widest">Dossier: {currentFolder?.discordName}</span>
-                    <div className={`px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest ${activeCandidature.status === 'en_attente' ? 'border-amber-500/30 text-amber-500 bg-amber-500/5' : activeCandidature.status === 'accepte' ? 'border-green-500/30 text-green-500 bg-green-500/5' : 'border-red-500/30 text-red-500 bg-red-500/5'}`}>{activeCandidature.status === 'en_attente' ? 'En Attente' : activeCandidature.status.toUpperCase()}</div>
+                    <div className={`px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest ${activeCandidature.status === 'en_attente' ? 'border-amber-500/30 text-amber-500 bg-amber-500/5' : activeCandidature.status === 'accepte' ? 'border-green-500/30 text-green-500 bg-green-500/5' : 'border-red-500/30 text-red-500 bg-red-500/5'}`}>{activeCandidature.status === 'en_attente' ? 'En Attente' : activeCandidature.status === 'accepte' ? 'Acceptée' : activeCandidature.status.toUpperCase()}</div>
                   </div>
 
                   {activeCandidature.status === 'en_attente' && activeCandidature.lastRefusalReason && (
@@ -314,7 +314,6 @@ export default function AdminCandidaturesPage() {
                     </div>
                   )}
 
-                  {/* BANDEAU D'ALERTE POUR LA RACE "AUTRE" */}
                   {activeCandidature.race === 'Autre' && activeCandidature.status === 'en_attente' && (
                     <div className="mb-8 p-6 bg-amber-500/5 border border-amber-500/20 rounded-[2rem] flex gap-5 items-center shadow-lg">
                       <div className="text-2xl">🎫</div>
@@ -325,7 +324,6 @@ export default function AdminCandidaturesPage() {
                     </div>
                   )}
 
-                  {/* AJOUT : BANDEAU D'ALERTE POUR SKIN HD (512x512) */}
                   {isHighResSkin && activeCandidature.status === 'en_attente' && (
                     <div className="mb-8 p-6 bg-amber-500/5 border border-amber-500/20 rounded-[2rem] flex gap-5 items-center shadow-lg">
                       <div className="text-2xl">🎫</div>
