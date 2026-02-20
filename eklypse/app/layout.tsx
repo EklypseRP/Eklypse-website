@@ -16,8 +16,47 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Eklypse",
-  description: "Entrez dans la légende... avant qu'elle ne s'éteigne.",
+  metadataBase: new URL('https://eklypse.xyz'),
+  title: {
+    default: "Eklypse | Serveur Minecraft MMORPG Médiéval-Fantasy",
+    template: "%s | Eklypse",
+  },
+  description: "Rejoignez Eklypse, un serveur Minecraft MMORPG Médiéval-Fantasy immersif. Découvrez un lore riche, choisissez votre destinée, et entrez dans la légende avant qu'elle ne s'éteigne.",
+  keywords: ["Minecraft", "Serveur Minecraft", "MMORPG", "Médiéval", "Fantasy", "RP", "Roleplay", "Eklypse", "Serveur Francophone", "Survie", "FR"],
+  authors: [{ name: "Équipe Eklypse" }],
+  creator: "Eklypse",
+  publisher: "Eklypse",
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    url: "https://eklypse.xyz",
+    title: "Eklypse | Serveur Minecraft MMORPG",
+    description: "Un Serveur Minecraft MMORPG Médiéval-Fantasy. Entrez dans la légende... avant qu'elle ne s'éteigne.",
+    siteName: "Eklypse",
+    images: [{
+      url: "/Eklypse.png",
+      width: 1200,
+      height: 630,
+      alt: "Logo du Serveur Eklypse"
+    }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Eklypse | Serveur Minecraft MMORPG",
+    description: "Un Serveur Minecraft MMORPG Médiéval-Fantasy inédit. Rejoignez la légende !",
+    images: ["/Eklypse.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default function RootLayout({

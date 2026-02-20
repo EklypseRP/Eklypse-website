@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import React from 'react';
 import { getWikiTree, getWikiContent, formatTitle, WikiNode } from '@/lib/wiki';
 import MarkdownRenderer from '@/app/components/MarkdownRenderer';
@@ -17,6 +18,30 @@ const FADE_IN_ANIMATION = `
     }
   }
 `;
+
+// Génération dynamique du SEO pour chaque page du Wiki
+export async function generateMetadata({ params }: { params: Promise<{ path: string[] }> }): Promise<Metadata> {
+  const { path: pathSegments } = await params;
+  const contentData = getWikiContent(pathSegments);
+  
+  if (!contentData) {
+    return { title: 'Page introuvable' };
+  }
+
+  const { data } = contentData;
+  const title = data.title || formatTitle(pathSegments[pathSegments.length - 1]);
+  const description = data.description || `Découvrez l'histoire et les secrets de ${title} sur le wiki officiel d'Eklypse, notre serveur Minecraft MMORPG.`;
+
+  return {
+    title: title,
+    description: description,
+    openGraph: {
+      title: `${title} | Wiki Eklypse`,
+      description: description,
+      type: 'article',
+    },
+  };
+}
 
 export default async function WikiDynamicPage({ params }: { params: Promise<{ path: string[] }> }) {
   const { path: pathSegments } = await params;
