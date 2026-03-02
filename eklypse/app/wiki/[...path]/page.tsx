@@ -4,6 +4,7 @@ import { getWikiTree, getWikiContent, formatTitle, WikiNode } from '@/lib/wiki';
 import MarkdownRenderer from '@/app/components/MarkdownRenderer';
 import WikiSidebar from '@/app/components/WikiSidebar';
 import { ArticleCard, CategoryCard, BackButton } from '../WikiClientComponents';
+export const dynamic = 'force-dynamic';
 
 const FADE_IN_ANIMATION = `
   @keyframes wikiFadeIn {
@@ -43,24 +44,6 @@ export async function generateMetadata({ params }: { params: Promise<{ path: str
       type: 'article',
     },
   };
-}
-
-// Fonction pour accélérer le wiki (Pré-génération statique)
-export async function generateStaticParams() {
-  const tree = getWikiTree();
-  const paths: { path: string[] }[] = [];
-
-  function extractPaths(nodes: WikiNode[]) {
-    nodes.forEach((node) => {
-      paths.push({ path: node.path.split('/') });
-      if (node.children) {
-        extractPaths(node.children);
-      }
-    });
-  }
-
-  extractPaths(tree);
-  return paths;
 }
 
 export default async function WikiDynamicPage({ params }: { params: Promise<{ path: string[] }> }) {

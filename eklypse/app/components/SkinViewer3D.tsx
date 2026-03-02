@@ -21,7 +21,6 @@ export default function SkinViewer3D({ skinUrl, width = 280, height = 350 }: Pro
     let isMounted = true;
 
     const initViewer = async () => {
-      // Nettoyage propre avant de recommencer
       if (viewerRef.current) {
         viewerRef.current.dispose();
         viewerRef.current = null;
@@ -31,8 +30,6 @@ export default function SkinViewer3D({ skinUrl, width = 280, height = 350 }: Pro
       setError(false);
 
       try {
-        // 1. On vérifie manuellement si l'image charge au niveau du navigateur
-        // avant de la donner à skinview3d
         await new Promise((resolve, reject) => {
           const img = new Image();
           img.onload = resolve;
