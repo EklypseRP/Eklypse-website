@@ -46,10 +46,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    // RÉCUPÉRATION DES CHAMPS (Ajout de taille et race)
-    const { id, rpName, age, lore, physique, mental, mcPseudo, isFinalSubmit, skinUrl, taille, race } = await req.json();
 
-    // --- SÉCURITÉS & VALIDATIONS ---
+    const { id, rpName, age, lore, physique, mental, mcPseudo, isFinalSubmit, skinUrl, skinUrls, taille, race } = await req.json();
+
+ 
+    const finalSkinUrls = (skinUrls && skinUrls.length > 0) ? skinUrls : (skinUrl ? [skinUrl] : []);
+
+
     const cleanRpName = String(rpName).replace(/[0-9]/g, '').trim();
     const numericAge = parseInt(age);
     
@@ -60,7 +63,6 @@ export async function POST(req: Request) {
       if (isNaN(numericAge) || numericAge < 18) {
         return NextResponse.json({ error: "Âge invalide (Min. 18 ans)." }, { status: 400 });
       }
-      // VALIDATION NOUVEAUX CHAMPS
       if (!taille || taille.trim().length === 0) {
         return NextResponse.json({ error: "La taille est obligatoire." }, { status: 400 });
       }
@@ -78,6 +80,13 @@ export async function POST(req: Request) {
       }
       if (!lore || (lore.content && lore.content.length === 0)) {
         return NextResponse.json({ error: "Le récit ne peut pas être vide." }, { status: 400 });
+      }
+      // Validation des skins
+      if (finalSkinUrls.length === 0) {
+        return NextResponse.json({ error: "L'apparence physique (Skin) est obligatoire (au moins 1)." }, { status: 400 });
+      }
+      if (finalSkinUrls.length > 8) {
+        return NextResponse.json({ error: "Vous ne pouvez pas envoyer plus de 8 skins." }, { status: 400 });
       }
     }
 
@@ -108,7 +117,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // --- PRÉPARATION DU DOCUMENT ---
     const candidDocument: any = {
       rpName: cleanRpName.substring(0, 100),
       age: numericAge,
@@ -118,7 +126,8 @@ export async function POST(req: Request) {
       physique: physique || "",
       mental: mental || "",
       mcPseudo: mcPseudo || "",
-      skinUrl: skinUrl || null,
+      skinUrls: finalSkinUrls,
+      skinUrl: finalSkinUrls[0] || null,
       userEmail: session.user.email,
       userName: session.user.name,
       userImage: session.user.image,
@@ -145,7 +154,6 @@ export async function POST(req: Request) {
       candidDocument.reviewedAt = null;
     }
 
-    // --- ENREGISTREMENT ---
     if (id) {
       await db.collection("candid").updateOne(
         { _id: new ObjectId(id), discordId: userInDb.discordId },
@@ -163,8 +171,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // --- SUPPRESSION DES BROUILLONS ---
-    // Si la candidature est soumise de façon finale, on supprime tous les brouillons en BDD
     if (isFinalSubmit) {
       await db.collection("candid").deleteMany({
         discordId: userInDb.discordId,

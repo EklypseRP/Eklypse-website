@@ -68,7 +68,6 @@ const EDITOR_STYLES = `
   }
 `;
 
-// Extension pour quitter le mode Titre quand on fait Entrée
 const HeadingExitOnEnter = Extension.create({
   name: 'HeadingExitOnEnter',
   addKeyboardShortcuts() {
@@ -101,7 +100,6 @@ const SkinDimensions = ({ url }: { url: string | null | undefined }) => {
   );
 };
 
-// ToolbarButton avec transition rapide (75ms)
 const ToolbarButton = ({ onClick, isActive, children, title }: { onClick: () => void, isActive: boolean, children: React.ReactNode, title: string }) => (
   <button 
     type="button" 
@@ -162,24 +160,22 @@ export default function CandidatureForm() {
     physique: '', 
     mental: '', 
     mcPseudo: '', 
-    skinUrl: '' 
+    skinUrl: '',
+    skinUrls: [] as string[]
   });
-  const [skinPreview, setSkinPreview] = useState<string | null>(null);
+  
   const [isHighResSkin, setIsHighResSkin] = useState(false);
-
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
-  // REFS pour l'auto-resize
   const physiqueRef = useRef<HTMLTextAreaElement>(null);
   const mentalRef = useRef<HTMLTextAreaElement>(null);
 
-  // === REFS POUR SÉCURISER L'ENREGISTREMENT ===
   const viewRef = useRef(view);
   const editingIdRef = useRef(editingId);
   const formDataRef = useRef(formData);
-  const isEditorLoadingRef = useRef(false); // Verrou anti-sauvegarde automatique de Tiptap
+  const isEditorLoadingRef = useRef(false); 
 
   useEffect(() => { 
     viewRef.current = view; 
@@ -202,21 +198,25 @@ export default function CandidatureForm() {
   useEffect(() => { fetchCandidatures(); }, []);
 
   useEffect(() => {
-    const url = skinPreview || formData.skinUrl;
-    if (!url) { 
+    const currentSkins = formData.skinUrls?.length ? formData.skinUrls : (formData.skinUrl ? [formData.skinUrl] : []);
+    if (currentSkins.length === 0) { 
       setIsHighResSkin(false); 
       return; 
     }
-    const img = new window.Image();
-    img.onload = () => {
-      if (img.width === 512 && img.height === 512) {
-        setIsHighResSkin(true);
-      } else {
-        setIsHighResSkin(false);
-      }
-    };
-    img.src = url;
-  }, [skinPreview, formData.skinUrl]);
+    
+    let hasHighRes = false;
+    let loaded = 0;
+
+    currentSkins.forEach(url => {
+      const img = new window.Image();
+      img.onload = () => {
+        if (img.width === 512 && img.height === 512) hasHighRes = true;
+        loaded++;
+        if (loaded === currentSkins.length) setIsHighResSkin(hasHighRes);
+      };
+      img.src = url;
+    });
+  }, [formData.skinUrls, formData.skinUrl]);
 
   useLayoutEffect(() => {
     if (view === 'form') {
@@ -235,9 +235,7 @@ export default function CandidatureForm() {
 
   const saveToLocal = useCallback(
     debounce((currentData: typeof formData, loreJson: any) => {
-      // SÉCURITÉ : On ne sauvegarde QUE si on est sur le formulaire ET que c'est une NOUVELLE candidature (pas d'ID)
       if (viewRef.current !== 'form' || editingIdRef.current) return;
-
       const draftData = { ...currentData, lore: loreJson, timestamp: Date.now() };
       localStorage.setItem('eklypse_candidature_draft', JSON.stringify(draftData));
       setDraft(draftData);
@@ -265,9 +263,7 @@ export default function CandidatureForm() {
       setUpdateTrigger(prev => prev + 1);
     },
     onUpdate: ({ editor }) => {
-      // On bloque si l'éditeur est en train de charger du texte informatiquement
       if (isEditorLoadingRef.current) return;
-
       if (viewRef.current === 'form' && !editingIdRef.current) {
         setSaveStatus('saving');
         saveToLocal(formDataRef.current, editor.getJSON());
@@ -275,16 +271,14 @@ export default function CandidatureForm() {
     }
   });
 
-  // Fonction sûre pour modifier le texte de l'éditeur sans déclencher de sauvegarde fantôme
   const safeSetContent = (content: any, isClear = false) => {
     if (!editor) return;
-    isEditorLoadingRef.current = true; // On active le verrou
+    isEditorLoadingRef.current = true;
     if (isClear) {
       editor.commands.clearContent();
     } else {
       editor.commands.setContent(content || '');
     }
-    // On libère le verrou peu après
     setTimeout(() => { isEditorLoadingRef.current = false; }, 100);
   };
 
@@ -301,41 +295,56 @@ export default function CandidatureForm() {
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
 
-    const dims = await checkImageDimensions(file);
-    if (dims.width > 512 || dims.height > 512) {
-      alert(`Format invalide : Votre image fait ${dims.width}x${dims.height}. Le format maximum autorisé est 512x512 pixels.`);
+    const currentSkins = formData.skinUrls?.length ? formData.skinUrls : (formData.skinUrl ? [formData.skinUrl] : []);
+    if (currentSkins.length + files.length > 8) {
+      alert("Vous ne pouvez uploader que 8 skins maximum.");
       e.target.value = ''; 
       return;
     }
 
-    const localUrl = URL.createObjectURL(file);
-    setSkinPreview(localUrl);
     setIsUploading(true);
+    const newUrls: string[] = [];
 
-    const data = new FormData();
-    data.append("file", file);
-    try {
-      const res = await fetch("/api/upload/skin", { method: "POST", body: data });
-      const result = await res.json();
-      if (result.success) {
-        const newFormData = { ...formData, skinUrl: result.url };
-        setFormData(newFormData);
-        if (view === 'form' && !editingId) {
-          saveToLocal(newFormData, editor?.getJSON());
-        }
+    for (const file of files) {
+      const dims = await checkImageDimensions(file);
+      if (dims.width > 512 || dims.height > 512) {
+        alert(`Format invalide pour ${file.name} : ${dims.width}x${dims.height}. Le maximum est 512x512.`);
+        continue;
       }
-    } catch (err) { 
-      alert("Erreur upload"); 
-    } finally { 
-      setIsUploading(false); 
+
+      const data = new FormData();
+      data.append("file", file);
+      try {
+        const res = await fetch("/api/upload/skin", { method: "POST", body: data });
+        const result = await res.json();
+        if (result.success) {
+          newUrls.push(result.url);
+        }
+      } catch (err) { alert(`Erreur upload pour ${file.name}`); }
     }
+
+    if (newUrls.length > 0) {
+      const updatedSkinUrls = [...currentSkins, ...newUrls];
+      const newFormData = { ...formData, skinUrls: updatedSkinUrls, skinUrl: updatedSkinUrls[0] };
+      setFormData(newFormData);
+      if (view === 'form' && !editingId) saveToLocal(newFormData, editor?.getJSON());
+    }
+    setIsUploading(false);
+    e.target.value = '';
+  };
+
+  const removeSkin = (indexToRemove: number) => {
+    const currentSkins = formData.skinUrls?.length ? formData.skinUrls : (formData.skinUrl ? [formData.skinUrl] : []);
+    const updatedSkins = currentSkins.filter((_, i) => i !== indexToRemove);
+    const newFormData = { ...formData, skinUrls: updatedSkins, skinUrl: updatedSkins[0] || '' };
+    setFormData(newFormData);
+    if (view === 'form' && !editingId) saveToLocal(newFormData, editor?.getJSON());
   };
 
   const handleEditApplication = (c: any) => {
-    // Force une string pour éviter que ça soit évalué comme null
     setEditingId(c._id || "edit_mode"); 
     setCurrentRefusalReason(c.refusalReason || null);
     setFormData({ 
@@ -346,9 +355,9 @@ export default function CandidatureForm() {
       physique: c.physique || '',
       mental: c.mental || '',
       mcPseudo: c.mcPseudo || '',
-      skinUrl: c.skinUrl || '' 
+      skinUrl: c.skinUrl || '',
+      skinUrls: c.skinUrls || (c.skinUrl ? [c.skinUrl] : [])
     });
-    setSkinPreview(c.skinUrl || null);
     safeSetContent(c.lore);
     setView('form');
   };
@@ -365,9 +374,9 @@ export default function CandidatureForm() {
       physique: draft.physique || '',
       mental: draft.mental || '',
       mcPseudo: draft.mcPseudo || '',
-      skinUrl: draft.skinUrl || '' 
+      skinUrl: draft.skinUrl || '',
+      skinUrls: draft.skinUrls || (draft.skinUrl ? [draft.skinUrl] : [])
     });
-    setSkinPreview(draft.skinUrl || null);
     safeSetContent(draft.lore);
     setView('form');
   };
@@ -412,7 +421,11 @@ export default function CandidatureForm() {
     if (!formData.physique.trim()) return alert("La description physique est obligatoire.");
     if (!formData.mental.trim()) return alert("La description mentale est obligatoire.");
     if (editor.getText().trim().length === 0) return alert("Le récit (Lore) ne peut pas être vide.");
-    if (!formData.skinUrl) return alert("L'apparence physique (Skin) est obligatoire.");
+    
+    const currentSkins = formData.skinUrls?.length ? formData.skinUrls : (formData.skinUrl ? [formData.skinUrl] : []);
+    if (currentSkins.length === 0) return alert("L'apparence physique (Skin) est obligatoire (Minimum 1).");
+    if (currentSkins.length > 8) return alert("Vous ne pouvez pas envoyer plus de 8 skins.");
+    
     if (!formData.mcPseudo) return alert("Le pseudo Minecraft est requis.");
 
     setLoading(true);
@@ -463,8 +476,7 @@ export default function CandidatureForm() {
               onClick={() => {
                 setEditingId(null);
                 setCurrentRefusalReason(null);
-                setFormData({ rpName: '', age: '', taille: '', race: 'Humain', physique: '', mental: '', mcPseudo: '', skinUrl: '' });
-                setSkinPreview(null);
+                setFormData({ rpName: '', age: '', taille: '', race: 'Humain', physique: '', mental: '', mcPseudo: '', skinUrl: '', skinUrls: [] });
                 safeSetContent(null, true);
                 setView('form');
               }}
@@ -574,14 +586,19 @@ export default function CandidatureForm() {
             </div>
 
             <div className="lg:col-span-4 flex flex-col items-center gap-6 sticky top-10">
-               <div className="flex flex-col items-center gap-4">
-                  <span className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em]">Skin 3D</span>
-                  <SkinViewer3D skinUrl={selectedCandid.skinUrl} width={260} height={380} />
+               <div className="flex flex-col items-center gap-4 max-h-[600px] overflow-y-auto custom-scrollbar p-2">
+                  <span className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em]">Skin(s) 3D</span>
+                  {(selectedCandid.skinUrls?.length ? selectedCandid.skinUrls : (selectedCandid.skinUrl ? [selectedCandid.skinUrl] : [])).map((url: string, i: number) => (
+                    <div key={i} className="flex flex-col items-center gap-2 mb-4">
+                      <SkinViewer3D skinUrl={url} width={200} height={280} />
+                      <SkinDimensions url={url} />
+                    </div>
+                  ))}
+                  
                   <div className="mt-4 px-6 py-3 bg-white/5 border border-white/20 rounded-2xl text-center w-full">
                      <span className="block text-[8px] text-neutral-400 uppercase font-black tracking-widest mb-1">Pseudo Minecraft</span>
                      <span className="text-sm font-bold text-[#CBDBFC] tracking-tight">{selectedCandid.mcPseudo || "Inconnu"}</span>
                   </div>
-                  <SkinDimensions url={selectedCandid.skinUrl} />
                </div>
                {selectedCandid.status === 'refuse' && (
                   <button onClick={() => handleEditApplication(selectedCandid)} className="w-full py-6 bg-white text-black font-black uppercase text-xs tracking-[0.4em] rounded-[2rem] hover:bg-[#CBDBFC] transition-all transform hover:scale-105 active:scale-95 shadow-xl">
@@ -684,11 +701,11 @@ export default function CandidatureForm() {
                    <input name="mcPseudo" value={formData.mcPseudo} onChange={handleInputChange} required autoComplete="off" placeholder="Ex: Steve_64" className="w-full p-6 rounded-2xl text-white outline-none transition-all" />
                 </div>
                 <div className="space-y-4">
-                  <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em]">Fichier Apparence (.png - Max 512x512) <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em]">Fichiers Apparence (.png - Max 8 skins) <span className="text-red-500">*</span></label>
                   <div className="relative group">
-                    <input type="file" accept="image/png" onChange={handleFileChange} className="hidden" id="skin-upload" />
+                    <input type="file" multiple accept="image/png" onChange={handleFileChange} className="hidden" id="skin-upload" />
                     <label htmlFor="skin-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/20 rounded-[2rem] cursor-pointer hover:border-[#683892] hover:bg-[#683892]/10 transition-all text-center bg-black/40">
-                      {isUploading ? <span className="animate-pulse text-[10px] font-black uppercase text-[#CBDBFC]">Analyse du fichier...</span> : <><span className="text-3xl mb-3">👔</span><span className="text-[10px] font-black uppercase text-neutral-400 group-hover:text-white transition-colors">Charger mon Skin</span></>}
+                      {isUploading ? <span className="animate-pulse text-[10px] font-black uppercase text-[#CBDBFC]">Analyse et Upload...</span> : <><span className="text-3xl mb-3">👔</span><span className="text-[10px] font-black uppercase text-neutral-400 group-hover:text-white transition-colors">Charger mes Skins</span></>}
                     </label>
                   </div>
                   {isHighResSkin && (
@@ -696,10 +713,17 @@ export default function CandidatureForm() {
                   )}
                 </div>
               </div>
-              <div className="flex flex-col items-center gap-4">
-                <span className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em]">Skin 3D</span>
-                <SkinViewer3D skinUrl={skinPreview || formData.skinUrl} />
-                <SkinDimensions url={skinPreview || formData.skinUrl} />
+              <div className="flex flex-col items-center gap-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+                <span className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em]">Aperçu 3D</span>
+                <div className="flex flex-wrap justify-center gap-4">
+                  {(formData.skinUrls?.length ? formData.skinUrls : (formData.skinUrl ? [formData.skinUrl] : [])).map((url, i) => (
+                    <div key={i} className="flex flex-col items-center gap-2 relative">
+                      <button type="button" onClick={() => removeSkin(i)} className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-red-500 text-white font-black z-10 flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20">✕</button>
+                      <SkinViewer3D skinUrl={url} width={150} height={200} />
+                      <SkinDimensions url={url} />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 

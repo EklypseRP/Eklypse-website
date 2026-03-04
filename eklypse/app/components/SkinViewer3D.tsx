@@ -49,10 +49,15 @@ export default function SkinViewer3D({ skinUrl, width = 280, height = 350 }: Pro
         viewerRef.current = viewer;
 
         // Configuration
-        viewer.animation = new skinview3d.WalkingAnimation();
-        viewer.autoRotate = true;
-        viewer.autoRotateSpeed = 0.6;
+        viewer.animation = null;
+        viewer.autoRotate = false;
         viewer.camera.position.set(-20, 15, 40);
+        viewer.playerObject.skin.leftArm.rotation.x = -0.5;
+        viewer.playerObject.skin.rightArm.rotation.x = 0.5;
+        viewer.playerObject.skin.leftLeg.rotation.x = 0.5; 
+        viewer.playerObject.skin.rightLeg.rotation.x = -0.5; 
+        viewer.playerObject.skin.head.rotation.y = -0.2; 
+        viewer.playerObject.skin.head.rotation.x = 0.1;
 
         // Chargement du skin
         await viewer.loadSkin(skinUrl);

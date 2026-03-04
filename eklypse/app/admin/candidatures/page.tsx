@@ -75,7 +75,6 @@ export default function AdminCandidaturesPage() {
   const [selectedUserKey, setSelectedUserKey] = useState<string | null>(null);
   const [selectedCandidId, setSelectedCandidId] = useState<string | null>(null);
 
-  // AJOUT : État pour détecter si le skin est en HD
   const [isHighResSkin, setIsHighResSkin] = useState(false);
 
   const [refusalModal, setRefusalModal] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
@@ -154,19 +153,27 @@ export default function AdminCandidaturesPage() {
     [currentFolder, selectedCandidId]
   );
 
-  // AJOUT : Vérification des dimensions du skin de la candidature active
+  const activeSkins = activeCandidature?.skinUrls?.length ? activeCandidature.skinUrls : (activeCandidature?.skinUrl ? [activeCandidature.skinUrl] : []);
+
   useEffect(() => {
-    if (!activeCandidature?.skinUrl) {
+    if (!activeSkins.length) {
       setIsHighResSkin(false);
       return;
     }
-    const img = new window.Image();
-    img.onload = () => {
-      // Si 512x512 exact, on active l'alerte
-      setIsHighResSkin(img.width === 512 && img.height === 512);
-    };
-    img.src = activeCandidature.skinUrl;
-  }, [activeCandidature]);
+    
+    let isHd = false;
+    let loadedCount = 0;
+    
+    activeSkins.forEach((url: string) => {
+      const img = new window.Image();
+      img.onload = () => {
+        if (img.width === 512 && img.height === 512) isHd = true;
+        loadedCount++;
+        if (loadedCount === activeSkins.length) setIsHighResSkin(isHd);
+      };
+      img.src = url;
+    });
+  }, [activeCandidature, activeSkins]);
 
   if (loading) return <div className="h-screen flex items-center justify-center bg-[#0A0612] text-neutral-500 font-black tracking-[0.5em] animate-pulse uppercase text-xs">Lecture du Codex...</div>;
 
@@ -361,16 +368,25 @@ export default function AdminCandidaturesPage() {
                        <div className="mb-6 opacity-30 text-[10px] font-black uppercase tracking-[0.4em] text-white">Récit & Lore</div>
                        <LoreRenderer content={activeCandidature.lore} />
                     </div>
-                    <div className="flex flex-col items-center gap-4">
-                      <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-500">Skin 3D</span>
-                      <SkinViewer3D skinUrl={activeCandidature.skinUrl} width={250} height={350} />
+                    
+                    <div className="flex flex-col items-center gap-6 lg:w-1/3">
+                      <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-500">
+                        Skin{activeSkins.length > 1 ? 's' : ''} 3D ({activeSkins.length})
+                      </span>
                       
-                      <div className="mt-4 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-center w-full">
+                      <div className="flex flex-wrap justify-center gap-4 max-h-[500px] overflow-y-auto custom-scrollbar p-2">
+                        {activeSkins.map((url: string, i: number) => (
+                          <div key={i} className="flex flex-col items-center gap-3">
+                            <SkinViewer3D skinUrl={url} width={activeSkins.length > 1 ? 160 : 250} height={activeSkins.length > 1 ? 220 : 350} />
+                            <SkinDimensions url={url} />
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div className="mt-2 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-center w-full">
                          <span className="block text-[8px] text-neutral-500 uppercase font-black tracking-widest mb-1">Pseudo Minecraft</span>
                          <span className="text-sm font-bold text-[#CBDBFC] tracking-tight">{activeCandidature.mcPseudo || "Inconnu"}</span>
                       </div>
-                      
-                      <SkinDimensions url={activeCandidature.skinUrl} />
                     </div>
                   </div>
 
