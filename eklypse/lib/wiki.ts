@@ -7,32 +7,25 @@ const wikiDirectory = path.join(process.cwd(), 'content/wiki');
 export interface WikiNode {
   name: string;
   type: 'file' | 'folder';
-  path: string; // ex: "races/elfes"
+  path: string;
   icon: string;
   title: string;
+  order: number;
   children?: WikiNode[];
   content?: string;
 }
 
-/**
- * Transforme "ma-categorie" ou "ma categorie" en "Ma Categorie"
- * Gère les tirets et les espaces multiples.
- */
 export const formatTitle = (slug: string) => {
-  // On décode d'abord l'URL (le %20 devient un espace)
   const decoded = decodeURIComponent(slug);
   
   return decoded
-    .replace(/-/g, ' ') // Remplace les tirets par des espaces
+    .replace(/-/g, ' ')
     .split(' ')
     .filter(Boolean)
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 };
 
-/**
- * Fonction récursive pour scanner TOUT le dossier wiki
- */
 export function getWikiTree(currentDir: string = wikiDirectory, relativePath: string = ""): WikiNode[] {
   if (!fs.existsSync(currentDir)) return [];
   
@@ -40,7 +33,6 @@ export function getWikiTree(currentDir: string = wikiDirectory, relativePath: st
   const nodes: WikiNode[] = [];
 
   items.forEach((item) => {
-    // On ignore les fichiers d'index et les fichiers cachés
     if (item === 'index.md' || item === 'index.markdown' || item.startsWith('.')) return;
 
     const fullPath = path.join(currentDir, item);
@@ -51,12 +43,13 @@ export function getWikiTree(currentDir: string = wikiDirectory, relativePath: st
       const indexPath = path.join(fullPath, 'index.md');
       let icon = "📁";
       let title = formatTitle(item);
+      let order = 999;
 
-      // Récupération des métadonnées du dossier via index.md
       if (fs.existsSync(indexPath)) {
         const { data } = matter(fs.readFileSync(indexPath, 'utf8'));
         if (data.categoryIcon || data.icon) icon = data.categoryIcon || data.icon;
         if (data.title) title = data.title;
+        if (data.order !== undefined) order = Number(data.order);
       }
 
       nodes.push({
@@ -65,6 +58,7 @@ export function getWikiTree(currentDir: string = wikiDirectory, relativePath: st
         path: itemRelativePath,
         icon,
         title,
+        order,
         children: getWikiTree(fullPath, itemRelativePath) // RÉCURSIVITÉ
       });
     } else if (item.endsWith('.md') || item.endsWith('.markdown')) {
@@ -77,24 +71,26 @@ export function getWikiTree(currentDir: string = wikiDirectory, relativePath: st
         type: 'file',
         path: cleanPath,
         icon: data.icon || "📜",
-        title: data.title || formatTitle(slug)
+        title: data.title || formatTitle(slug),
+        order: data.order !== undefined ? Number(data.order) : 999 // Valeur par défaut pour les fichiers
       });
     }
   });
 
-  // Tri : Dossiers d'abord, puis ordre alphabétique
   return nodes.sort((a, b) => {
     if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+    
+    if (a.order !== b.order) {
+      return a.order - b.order;
+    }
+
+    // Tri alphabétique final si tout le reste est identique
     return a.title.localeCompare(b.title);
   });
 }
 
-/**
- * Récupère les données d'un nœud spécifique (dossier ou fichier)
- * Décode les segments pour supporter les espaces dans les noms de fichiers.
- */
 export function getWikiContent(segments: string[]) {
-  // RÉPARATION : Décodage des segments d'URL pour correspondre au système de fichiers
+  // Décodage des segments d'URL pour correspondre au système de fichiers
   const decodedSegments = segments.map(s => decodeURIComponent(s));
   const relPath = decodedSegments.join('/');
   const fullPath = path.join(wikiDirectory, relPath);
