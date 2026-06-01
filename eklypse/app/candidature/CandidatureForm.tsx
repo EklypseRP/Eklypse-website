@@ -6,68 +6,15 @@ import StarterKit from '@tiptap/starter-kit';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
 import { Extension } from '@tiptap/core';
-import SkinViewer3D from "../components/SkinViewer3D";
+import SkinViewer3D from '../components/SkinViewer3D';
 // @ts-ignore
 import { FontSize } from 'tiptap-extension-font-size';
 // @ts-ignore
 import { lineHeight } from 'tiptap-extension-line-height';
 import debounce from 'lodash.debounce';
+import { FileText, X, Upload, AlertTriangle, ChevronLeft, Scroll } from 'lucide-react';
 
-const FADE_IN_ANIMATION = `
-  @keyframes smoothFadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-`;
-
-const EDITOR_STYLES = `
-  .tiptap-editor {
-    background-color: transparent !important;
-    color: white !important;
-    min-height: 500px;
-  }
-  
-  .tiptap-editor strong { font-weight: bold !important; color: white !important; }
-  .tiptap-editor em { font-style: italic !important; color: white !important; }
-  .tiptap-editor u { text-decoration: underline !important; color: white !important; }
-  .tiptap-editor h2 { font-size: 1.5rem !important; font-weight: bold !important; margin-top: 1.5rem !important; color: #CBDBFC !important; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; }
-  .tiptap-editor ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin-bottom: 1rem !important; color: white !important; }
-  .tiptap-editor p { margin-bottom: 1rem; line-height: 1.6; color: white !important; }
-  
-  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(104, 56, 146, 0.5); border-radius: 10px; }
-
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover, 
-  input:-webkit-autofill:focus,
-  textarea:-webkit-autofill,
-  textarea:-webkit-autofill:hover,
-  textarea:-webkit-autofill:focus {
-    -webkit-text-fill-color: white !important;
-    -webkit-box-shadow: 0 0 0px 1000px #140b1d inset !important; 
-    transition: background-color 5000s ease-in-out 0s;
-  }
-  
-  /* CONTRASTES RENFORCÉS POUR L'ACCESSIBILITÉ */
-  input, textarea, select {
-    background-color: rgba(0, 0, 0, 0.4) !important;
-    color: white !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  }
-
-  input:focus, textarea:focus, select:focus {
-    background-color: rgba(0, 0, 0, 0.6) !important;
-    border-color: #683892 !important;
-    outline: none !important;
-    box-shadow: 0 0 0 1px rgba(104, 56, 146, 0.3);
-  }
-
-  select option {
-    background-color: #140b1d !important;
-    color: white !important;
-  }
-`;
-
+/* ── Tiptap extension: exit heading on Enter ── */
 const HeadingExitOnEnter = Extension.create({
   name: 'HeadingExitOnEnter',
   addKeyboardShortcuts() {
@@ -82,6 +29,7 @@ const HeadingExitOnEnter = Extension.create({
   },
 });
 
+/* ── Skin dimensions badge ── */
 const SkinDimensions = ({ url }: { url: string | null | undefined }) => {
   const [dims, setDims] = useState<string | null>(null);
   useEffect(() => {
@@ -92,56 +40,165 @@ const SkinDimensions = ({ url }: { url: string | null | undefined }) => {
   }, [url]);
   if (!dims) return null;
   return (
-    <div className="mt-2 px-4 py-2 bg-black/60 border border-white/10 rounded-full">
-      <span className="text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: 'rgba(203, 219, 252, 0.9)' }}>
-        Format : {dims}
-      </span>
+    <div style={{
+      padding: '0.25rem 0.75rem',
+      background: 'rgba(0,0,0,0.4)',
+      border: '1px solid var(--border-subtle)',
+      borderRadius: 'var(--radius-sm)',
+      fontSize: '0.72rem', fontWeight: 700,
+      letterSpacing: '0.1em', textTransform: 'uppercase',
+      color: 'var(--text-muted)',
+    }}>
+      {dims}
     </div>
   );
 };
 
-const ToolbarButton = ({ onClick, isActive, children, title }: { onClick: () => void, isActive: boolean, children: React.ReactNode, title: string }) => (
-  <button 
-    type="button" 
-    onMouseDown={(e) => { e.preventDefault(); onClick(); }} 
-    title={title} 
-    className={`flex items-center justify-center min-w-[50px] h-[45px] px-3 rounded-xl border transition-all duration-75 ${isActive ? 'bg-[#683892] border-[#683892] text-white shadow-[0_0_15px_rgba(104,56,146,0.5)] scale-105' : 'bg-white/5 border-white/20 text-neutral-400 hover:text-white hover:bg-white/10'}`}
+/* ── Status badge ── */
+function StatusBadge({ status }: { status: string }) {
+  const config: Record<string, { label: string; bg: string; border: string; color: string }> = {
+    en_attente: { label: 'En attente', bg: 'rgba(201,168,76,0.12)', border: 'rgba(201,168,76,0.3)', color: 'var(--brand-gold)' },
+    accepte:    { label: 'Acceptée',   bg: 'rgba(6,182,212,0.12)',  border: 'rgba(6,182,212,0.3)',  color: 'var(--brand-teal)' },
+    refuse:     { label: 'Refusée',    bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.3)',  color: '#F87171' },
+  };
+  const s = config[status] ?? { label: status, bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.3)', color: 'var(--brand-primary)' };
+  return (
+    <span style={{
+      display: 'inline-block',
+      padding: '0.2rem 0.7rem',
+      background: s.bg, border: `1px solid ${s.border}`,
+      borderRadius: 'var(--radius-sm)',
+      color: s.color,
+      fontSize: '0.72rem', fontWeight: 700,
+      letterSpacing: '0.08em', textTransform: 'uppercase',
+    }}>
+      {s.label}
+    </span>
+  );
+}
+
+/* ── Toolbar button ── */
+const ToolbarButton = ({
+  onClick, isActive, children, title,
+}: {
+  onClick: () => void; isActive: boolean; children: React.ReactNode; title: string;
+}) => (
+  <button
+    type="button"
+    onMouseDown={(e) => { e.preventDefault(); onClick(); }}
+    title={title}
+    style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      minWidth: 40, height: 36, padding: '0 0.625rem',
+      background: isActive ? 'rgba(124,58,237,0.3)' : 'rgba(124,58,237,0.06)',
+      border: `1px solid ${isActive ? 'rgba(124,58,237,0.5)' : 'var(--border-subtle)'}`,
+      borderRadius: 'var(--radius-sm)',
+      color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+      cursor: 'pointer',
+      transition: 'background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out)',
+      fontSize: '0.875rem',
+    }}
   >
     {children}
   </button>
 );
 
+/* ── Toolbar (MenuBar) ── */
 const MenuBar = ({ editor }: { editor: any }) => {
   if (!editor) return null;
   return (
-    <div className="sticky top-0 z-[40] flex items-center justify-center flex-wrap gap-4 p-5 bg-[#0e0816] border-b border-white/20 w-full font-sans shadow-xl rounded-t-[2.5rem]">
-      <div className="flex gap-2 pr-4 border-r border-white/10">
-        <ToolbarButton title="Gras" onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')}><span className="font-black text-lg">B</span></ToolbarButton>
-        <ToolbarButton title="Italique" onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')}><span className="italic font-serif text-lg">I</span></ToolbarButton>
-        <ToolbarButton title="Souligné" onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')}><span className="underline font-serif text-lg">U</span></ToolbarButton>
+    <div style={{
+      position: 'sticky', top: 0, zIndex: 10,
+      display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem',
+      padding: '0.75rem 1rem',
+      background: 'rgba(255,255,255,0.98)',
+      backdropFilter: 'blur(8px)',
+      borderBottom: '1px solid var(--border-subtle)',
+      borderRadius: 'var(--radius-base) var(--radius-base) 0 0',
+    }}>
+      {/* Format */}
+      <div style={{ display: 'flex', gap: '0.25rem', paddingRight: '0.625rem', borderRight: '1px solid var(--border-subtle)' }}>
+        <ToolbarButton title="Gras" onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')}>
+          <strong>B</strong>
+        </ToolbarButton>
+        <ToolbarButton title="Italique" onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')}>
+          <em style={{ fontFamily: 'serif' }}>I</em>
+        </ToolbarButton>
+        <ToolbarButton title="Souligné" onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')}>
+          <span style={{ textDecoration: 'underline' }}>U</span>
+        </ToolbarButton>
       </div>
-      <div className="flex gap-3 px-4 border-r border-white/10 font-sans">
-        <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase font-bold text-neutral-400 ml-1">Taille</span>
-          <select 
-            className="bg-black/40 border border-white/20 text-[12px] text-white rounded-lg px-2 py-1 outline-none cursor-pointer hover:border-white/40 transition-colors" 
-            onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}
-          >
-            <option value="14px">14px</option>
-            <option value="16px">16px</option>
-            <option value="18px">18px</option>
-            <option value="22px">22px</option>
-          </select>
-        </div>
+
+      {/* Font size */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingRight: '0.625rem', borderRight: '1px solid var(--border-subtle)' }}>
+        <span style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', fontWeight: 700 }}>Taille</span>
+        <select
+          style={{
+            background: 'rgba(0,0,0,0.4)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-sm)',
+            color: 'var(--text-secondary)',
+            fontSize: '0.75rem',
+            padding: '0.2rem 0.4rem',
+            outline: 'none',
+            cursor: 'pointer',
+          }}
+          onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}
+        >
+          <option value="14px">14px</option>
+          <option value="16px">16px</option>
+          <option value="18px">18px</option>
+          <option value="22px">22px</option>
+        </select>
       </div>
-      <div className="flex gap-2 pl-2">
-        <ToolbarButton title="Titre" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })}><span className="text-[10px] uppercase font-black">Titre</span></ToolbarButton>
-        <ToolbarButton title="Liste" onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')}><span className="text-xl">•—</span></ToolbarButton>
+
+      {/* Block types */}
+      <div style={{ display: 'flex', gap: '0.25rem' }}>
+        <ToolbarButton title="Titre" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })}>
+          <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>H2</span>
+        </ToolbarButton>
+        <ToolbarButton title="Liste" onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')}>
+          <span>• —</span>
+        </ToolbarButton>
       </div>
     </div>
   );
 };
 
+/* ── Shared input style helpers ── */
+const inputBase: React.CSSProperties = {
+  width: '100%',
+  padding: '0.65rem 1rem',
+  minHeight: 44,
+  background: 'rgba(0,0,0,0.03)',
+  border: '1px solid var(--border-base)',
+  borderRadius: 'var(--radius-base)',
+  color: 'var(--text-primary)',
+  fontSize: '0.9rem',
+  outline: 'none',
+  transition: 'border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out)',
+};
+
+const onFocusInput = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  e.currentTarget.style.borderColor = 'var(--brand-primary)';
+  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(109,40,217,0.15)';
+};
+const onBlurInput = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  e.currentTarget.style.borderColor = 'var(--border-base)';
+  e.currentTarget.style.boxShadow = 'none';
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '0.75rem', fontWeight: 700,
+  letterSpacing: '0.1em', textTransform: 'uppercase',
+  color: 'var(--text-muted)',
+  marginBottom: '0.4rem',
+};
+
+/* ─────────────────────────────────────────────
+   Main component
+   ───────────────────────────────────────────── */
 export default function CandidatureForm() {
   const [view, setView] = useState<'history' | 'form' | 'details'>('history');
   const [history, setHistory] = useState<any[]>([]);
@@ -149,21 +206,20 @@ export default function CandidatureForm() {
   const [selectedCandid, setSelectedCandid] = useState<any | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [currentRefusalReason, setCurrentRefusalReason] = useState<string | null>(null);
-  
-  const [updateTrigger, setUpdateTrigger] = useState(0); 
+  const [updateTrigger, setUpdateTrigger] = useState(0);
 
-  const [formData, setFormData] = useState({ 
-    rpName: '', 
-    age: '', 
+  const [formData, setFormData] = useState({
+    rpName: '',
+    age: '',
     taille: '',
     race: 'Humain',
-    physique: '', 
-    mental: '', 
-    mcPseudo: '', 
+    physique: '',
+    mental: '',
+    mcPseudo: '',
     skinUrl: '',
-    skinUrls: [] as string[]
+    skinUrls: [] as string[],
   });
-  
+
   const [isHighResSkin, setIsHighResSkin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -175,10 +231,10 @@ export default function CandidatureForm() {
   const viewRef = useRef(view);
   const editingIdRef = useRef(editingId);
   const formDataRef = useRef(formData);
-  const isEditorLoadingRef = useRef(false); 
+  const isEditorLoadingRef = useRef(false);
 
-  useEffect(() => { 
-    viewRef.current = view; 
+  useEffect(() => {
+    viewRef.current = view;
     editingIdRef.current = editingId;
     formDataRef.current = formData;
   }, [view, editingId, formData]);
@@ -199,14 +255,9 @@ export default function CandidatureForm() {
 
   useEffect(() => {
     const currentSkins = formData.skinUrls?.length ? formData.skinUrls : (formData.skinUrl ? [formData.skinUrl] : []);
-    if (currentSkins.length === 0) { 
-      setIsHighResSkin(false); 
-      return; 
-    }
-    
+    if (!currentSkins.length) { setIsHighResSkin(false); return; }
     let hasHighRes = false;
     let loaded = 0;
-
     currentSkins.forEach(url => {
       const img = new window.Image();
       img.onload = () => {
@@ -226,12 +277,9 @@ export default function CandidatureForm() {
           ref.current.style.height = `${ref.current.scrollHeight}px`;
         }
       };
-      setTimeout(() => {
-        adjust(physiqueRef);
-        adjust(mentalRef);
-      }, 0);
+      setTimeout(() => { adjust(physiqueRef); adjust(mentalRef); }, 0);
     }
-  }, [view, formData.physique, formData.mental]); 
+  }, [view, formData.physique, formData.mental]);
 
   const saveToLocal = useCallback(
     debounce((currentData: typeof formData, loreJson: any) => {
@@ -240,50 +288,42 @@ export default function CandidatureForm() {
       localStorage.setItem('eklypse_candidature_draft', JSON.stringify(draftData));
       setDraft(draftData);
       setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 1500); 
-    }, 2000), []
+      setTimeout(() => setSaveStatus('idle'), 1500);
+    }, 2000),
+    [],
   );
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: { levels: [2] } }),
-      TextStyle, 
-      FontSize, 
-      lineHeight, 
-      Underline,
-      HeadingExitOnEnter
+      TextStyle, FontSize, lineHeight, Underline, HeadingExitOnEnter,
     ],
     immediatelyRender: false,
-    editorProps: { 
-      attributes: { 
-        class: 'tiptap-editor focus:outline-none p-10 text-white prose prose-invert max-w-none text-base outline-none' 
-      } 
+    editorProps: {
+      attributes: {
+        class: 'tiptap-editor focus:outline-none p-8',
+      },
     },
-    onTransaction: () => {
-      setUpdateTrigger(prev => prev + 1);
-    },
+    onTransaction: () => { setUpdateTrigger(prev => prev + 1); },
     onUpdate: ({ editor }) => {
       if (isEditorLoadingRef.current) return;
       if (viewRef.current === 'form' && !editingIdRef.current) {
         setSaveStatus('saving');
         saveToLocal(formDataRef.current, editor.getJSON());
       }
-    }
+    },
   });
 
   const safeSetContent = (content: any, isClear = false) => {
     if (!editor) return;
     isEditorLoadingRef.current = true;
-    if (isClear) {
-      editor.commands.clearContent();
-    } else {
-      editor.commands.setContent(content || '');
-    }
+    if (isClear) editor.commands.clearContent();
+    else editor.commands.setContent(content || '');
     setTimeout(() => { isEditorLoadingRef.current = false; }, 100);
   };
 
-  const checkImageDimensions = (file: File): Promise<{width: number, height: number}> => {
-    return new Promise((resolve) => {
+  const checkImageDimensions = (file: File): Promise<{ width: number; height: number }> =>
+    new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e: any) => {
         const img = new window.Image();
@@ -292,40 +332,32 @@ export default function CandidatureForm() {
       };
       reader.readAsDataURL(file);
     });
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-
     const currentSkins = formData.skinUrls?.length ? formData.skinUrls : (formData.skinUrl ? [formData.skinUrl] : []);
     if (currentSkins.length + files.length > 8) {
-      alert("Vous ne pouvez uploader que 8 skins maximum.");
-      e.target.value = ''; 
+      alert('Vous ne pouvez uploader que 8 skins maximum.');
+      e.target.value = '';
       return;
     }
-
     setIsUploading(true);
     const newUrls: string[] = [];
-
     for (const file of files) {
       const dims = await checkImageDimensions(file);
       if (dims.width > 512 || dims.height > 512) {
-        alert(`Format invalide pour ${file.name} : ${dims.width}x${dims.height}. Le maximum est 512x512.`);
+        alert(`Format invalide pour ${file.name} : ${dims.width}x${dims.height}. Maximum : 512x512.`);
         continue;
       }
-
       const data = new FormData();
-      data.append("file", file);
+      data.append('file', file);
       try {
-        const res = await fetch("/api/upload/skin", { method: "POST", body: data });
+        const res = await fetch('/api/upload/skin', { method: 'POST', body: data });
         const result = await res.json();
-        if (result.success) {
-          newUrls.push(result.url);
-        }
-      } catch (err) { alert(`Erreur upload pour ${file.name}`); }
+        if (result.success) newUrls.push(result.url);
+      } catch { alert(`Erreur upload pour ${file.name}`); }
     }
-
     if (newUrls.length > 0) {
       const updatedSkinUrls = [...currentSkins, ...newUrls];
       const newFormData = { ...formData, skinUrls: updatedSkinUrls, skinUrl: updatedSkinUrls[0] };
@@ -336,27 +368,22 @@ export default function CandidatureForm() {
     e.target.value = '';
   };
 
-  const removeSkin = (indexToRemove: number) => {
+  const removeSkin = (idx: number) => {
     const currentSkins = formData.skinUrls?.length ? formData.skinUrls : (formData.skinUrl ? [formData.skinUrl] : []);
-    const updatedSkins = currentSkins.filter((_, i) => i !== indexToRemove);
-    const newFormData = { ...formData, skinUrls: updatedSkins, skinUrl: updatedSkins[0] || '' };
+    const updated = currentSkins.filter((_, i) => i !== idx);
+    const newFormData = { ...formData, skinUrls: updated, skinUrl: updated[0] || '' };
     setFormData(newFormData);
     if (view === 'form' && !editingId) saveToLocal(newFormData, editor?.getJSON());
   };
 
   const handleEditApplication = (c: any) => {
-    setEditingId(c._id || "edit_mode"); 
+    setEditingId(c._id || 'edit_mode');
     setCurrentRefusalReason(c.refusalReason || null);
-    setFormData({ 
-      rpName: c.rpName || '', 
-      age: c.age?.toString() || '', 
-      taille: c.taille || '',
-      race: c.race || 'Humain',
-      physique: c.physique || '',
-      mental: c.mental || '',
-      mcPseudo: c.mcPseudo || '',
-      skinUrl: c.skinUrl || '',
-      skinUrls: c.skinUrls || (c.skinUrl ? [c.skinUrl] : [])
+    setFormData({
+      rpName: c.rpName || '', age: c.age?.toString() || '', taille: c.taille || '',
+      race: c.race || 'Humain', physique: c.physique || '', mental: c.mental || '',
+      mcPseudo: c.mcPseudo || '', skinUrl: c.skinUrl || '',
+      skinUrls: c.skinUrls || (c.skinUrl ? [c.skinUrl] : []),
     });
     safeSetContent(c.lore);
     setView('form');
@@ -366,16 +393,11 @@ export default function CandidatureForm() {
     if (!draft) return;
     setEditingId(null);
     setCurrentRefusalReason(null);
-    setFormData({ 
-      rpName: draft.rpName || '', 
-      age: draft.age || '', 
-      taille: draft.taille || '',
-      race: draft.race || 'Humain',
-      physique: draft.physique || '',
-      mental: draft.mental || '',
-      mcPseudo: draft.mcPseudo || '',
-      skinUrl: draft.skinUrl || '',
-      skinUrls: draft.skinUrls || (draft.skinUrl ? [draft.skinUrl] : [])
+    setFormData({
+      rpName: draft.rpName || '', age: draft.age || '', taille: draft.taille || '',
+      race: draft.race || 'Humain', physique: draft.physique || '', mental: draft.mental || '',
+      mcPseudo: draft.mcPseudo || '', skinUrl: draft.skinUrl || '',
+      skinUrls: draft.skinUrls || (draft.skinUrl ? [draft.skinUrl] : []),
     });
     safeSetContent(draft.lore);
     setView('form');
@@ -383,7 +405,7 @@ export default function CandidatureForm() {
 
   const handleDeleteDraft = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if(confirm("Supprimer le brouillon ?")) {
+    if (confirm('Supprimer le brouillon ?')) {
       localStorage.removeItem('eklypse_candidature_draft');
       setDraft(null);
     }
@@ -392,19 +414,17 @@ export default function CandidatureForm() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     let finalValue = value;
-
     if (name === 'age' || name === 'taille') finalValue = value.replace(/[^0-9]/g, '');
     else if (name === 'rpName') finalValue = value.replace(/[0-9]/g, '');
-    
+
     if (e.target.tagName === 'TEXTAREA') {
-        const target = e.target as HTMLTextAreaElement;
-        target.style.height = 'auto'; 
-        target.style.height = `${target.scrollHeight}px`;
+      const t = e.target as HTMLTextAreaElement;
+      t.style.height = 'auto';
+      t.style.height = `${t.scrollHeight}px`;
     }
 
     const newFormData = { ...formData, [name]: finalValue };
     setFormData(newFormData);
-    
     if (view === 'form' && !editingId) {
       setSaveStatus('saving');
       saveToLocal(newFormData, editor?.getJSON());
@@ -414,19 +434,16 @@ export default function CandidatureForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editor || loading) return;
-    
-    if (parseInt(formData.age) < 18) return alert("Âge minimum requis : 18 ans.");
-    if (!formData.taille.trim()) return alert("La taille est obligatoire (en chiffres uniquement)."); 
-    if (!formData.race.trim()) return alert("La race est obligatoire.");
-    if (!formData.physique.trim()) return alert("La description physique est obligatoire.");
-    if (!formData.mental.trim()) return alert("La description mentale est obligatoire.");
-    if (editor.getText().trim().length === 0) return alert("Le récit (Lore) ne peut pas être vide.");
-    
+    if (parseInt(formData.age) < 18) return alert('Âge minimum requis : 18 ans.');
+    if (!formData.taille.trim()) return alert('La taille est obligatoire (en chiffres uniquement).');
+    if (!formData.race.trim()) return alert('La race est obligatoire.');
+    if (!formData.physique.trim()) return alert('La description physique est obligatoire.');
+    if (!formData.mental.trim()) return alert('La description mentale est obligatoire.');
+    if (editor.getText().trim().length === 0) return alert('Le récit (Lore) ne peut pas être vide.');
     const currentSkins = formData.skinUrls?.length ? formData.skinUrls : (formData.skinUrl ? [formData.skinUrl] : []);
-    if (currentSkins.length === 0) return alert("L'apparence physique (Skin) est obligatoire (Minimum 1).");
-    if (currentSkins.length > 8) return alert("Vous ne pouvez pas envoyer plus de 8 skins.");
-    
-    if (!formData.mcPseudo) return alert("Le pseudo Minecraft est requis.");
+    if (!currentSkins.length) return alert('L\'apparence physique (Skin) est obligatoire (minimum 1).');
+    if (currentSkins.length > 8) return alert('Vous ne pouvez pas envoyer plus de 8 skins.');
+    if (!formData.mcPseudo) return alert('Le pseudo Minecraft est requis.');
 
     setLoading(true);
     try {
@@ -445,34 +462,82 @@ export default function CandidatureForm() {
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 
-  if (loading) return <div className="text-center py-40 animate-pulse font-black uppercase text-xs text-neutral-500 tracking-[0.5em]">Consultation du Codex...</div>;
+  /* ── Loading state ── */
+  if (loading) {
+    return (
+      <div style={{
+        padding: '5rem',
+        textAlign: 'center',
+        color: 'var(--text-muted)',
+        fontSize: '0.75rem',
+        fontWeight: 700,
+        letterSpacing: '0.3em',
+        textTransform: 'uppercase',
+        animation: 'pulse 2s ease-in-out infinite',
+      }}>
+        Consultation du Codex...
+      </div>
+    );
+  }
+
+  const currentSkins = formData.skinUrls?.length ? formData.skinUrls : (formData.skinUrl ? [formData.skinUrl] : []);
+  const hasPending = history.some(c => c.status === 'en_attente');
 
   return (
-    <div 
-      key={view + (editingId || 'new') + (selectedCandid?._id || 'none')} 
-      style={{ animation: 'smoothFadeIn 0.8s ease-in-out forwards' }}
-      className="w-full"
+    <div key={view + (editingId || 'new') + (selectedCandid?._id || 'none')}
+      style={{ animation: 'fade-up var(--duration-slow) var(--ease-out) both', width: '100%' }}
     >
-      <style dangerouslySetInnerHTML={{ __html: FADE_IN_ANIMATION + EDITOR_STYLES }} />
 
+      {/* ─── HISTORY VIEW ─── */}
       {view === 'history' && (
-        <div className="w-full space-y-16">
-          <div className="flex flex-col items-center">
-            {draft && (
-              <div 
-                onClick={handleResumeDraft}
-                className="mb-8 p-6 bg-white/[0.05] border border-white/20 rounded-[2rem] flex items-center gap-6 cursor-pointer hover:bg-white/[0.1] transition-all group shadow-lg"
-              >
-                <div className="h-10 w-10 bg-amber-500/20 rounded-full flex items-center justify-center text-amber-500 animate-pulse">📝</div>
-                <div>
-                  <p className="text-[10px] font-black uppercase text-neutral-400 tracking-widest">Brouillon en cours</p>
-                  <p className="text-sm font-bold text-white italic">"{draft.rpName || 'Sans nom'}"</p>
-                </div>
-                <button onClick={handleDeleteDraft} className="ml-4 p-2 text-neutral-500 hover:text-red-500 transition-colors">✕</button>
-              </div>
-            )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
 
-            <button 
+          {/* Draft banner */}
+          {draft && (
+            <div
+              onClick={handleResumeDraft}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '1rem',
+                padding: '1rem 1.25rem',
+                background: 'rgba(201,168,76,0.06)',
+                border: '1px solid rgba(201,168,76,0.25)',
+                borderRadius: 'var(--radius-base)',
+                cursor: 'pointer',
+                transition: 'background var(--duration-fast) var(--ease-out)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(201,168,76,0.12)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(201,168,76,0.06)'; }}
+            >
+              <FileText size={18} strokeWidth={1.5} style={{ color: 'var(--brand-gold)', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--brand-gold)', marginBottom: '0.15rem' }}>
+                  Brouillon en cours
+                </span>
+                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  "{draft.rpName || 'Sans nom'}"
+                </span>
+              </div>
+              <button
+                onClick={handleDeleteDraft}
+                style={{
+                  width: 32, height: 32, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'transparent', border: 'none',
+                  color: 'var(--text-muted)', cursor: 'pointer',
+                  borderRadius: 'var(--radius-sm)',
+                  transition: 'color var(--duration-fast) var(--ease-out)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#F87171'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; }}
+              >
+                <X size={14} strokeWidth={2} />
+              </button>
+            </div>
+          )}
+
+          {/* New application button */}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <button
               onClick={() => {
                 setEditingId(null);
                 setCurrentRefusalReason(null);
@@ -480,245 +545,552 @@ export default function CandidatureForm() {
                 safeSetContent(null, true);
                 setView('form');
               }}
-              disabled={history.some(c => c.status === 'en_attente')}
-              className="group relative px-16 py-8 rounded-[3rem] overflow-hidden transition-all duration-500 hover:scale-[1.05] shadow-2xl disabled:opacity-30"
+              disabled={hasPending}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.625rem',
+                padding: '0.875rem 2.5rem',
+                minHeight: 52,
+                background: hasPending ? 'rgba(124,58,237,0.15)' : 'linear-gradient(135deg, var(--brand-primary), #5B21B6)',
+                border: '1px solid rgba(124,58,237,0.4)',
+                borderRadius: 'var(--radius-lg)',
+                color: hasPending ? 'var(--text-muted)' : '#fff',
+                fontFamily: 'var(--font-cinzel), serif',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                letterSpacing: '0.08em',
+                cursor: hasPending ? 'not-allowed' : 'pointer',
+                opacity: hasPending ? 0.6 : 1,
+                transition: 'opacity var(--duration-fast) var(--ease-out)',
+              }}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#683892] to-[#321B46]" />
-              <span className="relative z-10 text-white font-black uppercase text-sm tracking-[0.4em]">
-                {history.some(c => c.status === 'en_attente') ? "Étude en cours..." : "Sceller un nouveau Récit"}
-              </span>
+              <Scroll size={16} strokeWidth={1.5} />
+              {hasPending ? 'Étude en cours...' : 'Sceller un nouveau Récit'}
             </button>
           </div>
 
-          <div className="space-y-6">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.5em] text-neutral-500 ml-4 italic border-l border-[#683892] pl-4">Archives d'Eklypse</h3>
+          {/* Archives list */}
+          <div>
+            <h3 style={{
+              fontSize: '0.72rem', fontWeight: 700,
+              letterSpacing: '0.14em', textTransform: 'uppercase',
+              color: 'var(--text-muted)',
+              marginBottom: '1rem',
+              paddingLeft: '0.5rem',
+              borderLeft: '2px solid var(--brand-primary)',
+            }}>
+              Archives d'Eklypse
+            </h3>
+
             {history.length === 0 && !draft ? (
-              <div className="p-16 border border-dashed border-white/10 rounded-[3rem] text-center opacity-40">
-                <p className="text-xs font-black uppercase text-white tracking-widest">Aucune trace dans les archives</p>
+              <div style={{
+                padding: '3rem',
+                border: '1px dashed var(--border-subtle)',
+                borderRadius: 'var(--radius-lg)',
+                textAlign: 'center',
+                color: 'var(--text-muted)',
+                fontSize: '0.875rem',
+              }}>
+                Aucune trace dans les archives
               </div>
             ) : (
-              history.map((c) => (
-                <div key={c._id} 
-                  onClick={() => {
-                    if (c.status !== 'refuse') {
-                      setSelectedCandid(c);
-                      safeSetContent(c.lore);
-                      setView('details');
-                    }
-                  }}
-                  className={`group bg-white/[0.05] border border-white/10 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg transition-all 
-                    ${c.status === 'refuse' ? 'cursor-default opacity-90' : 'cursor-pointer hover:bg-white/[0.08] hover:border-white/20'}`}
-                >
-                  <div>
-                    <h4 className={`text-2xl font-black text-white uppercase italic tracking-tighter ${c.status !== 'refuse' && 'group-hover:text-[#CBDBFC]'} transition-colors`}>{c.rpName}</h4>
-                    <p className="text-[9px] text-neutral-400 uppercase tracking-widest mt-1">Soumis le {new Date(c.submittedAt || c.updatedAt).toLocaleDateString()}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {c.status === 'refuse' && (
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleEditApplication(c); }}
-                        className="px-6 py-2 bg-red-600 border border-red-500 rounded-xl text-[9px] font-black text-white hover:bg-red-700 transition-all uppercase"
-                      >
-                        Corriger
-                      </button>
-                    )}
-                    <div className={`px-5 py-2 rounded-full border text-[9px] font-black uppercase tracking-widest 
-                      ${c.status === 'en_attente' ? 'border-amber-500/30 text-amber-500 bg-amber-500/5' : 
-                        c.status === 'accepte' ? 'border-green-500/30 text-green-500 bg-green-500/5' : 
-                        'border-red-500/30 text-red-500 bg-red-500/5'}`}>
-                      {c.status === 'en_attente' ? 'En Attente' : c.status === 'accepte' ? 'Acceptée' : 'Refusée'}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {history.map((c) => (
+                  <div
+                    key={c._id}
+                    onClick={() => {
+                      if (c.status !== 'refuse') {
+                        setSelectedCandid(c);
+                        safeSetContent(c.lore);
+                        setView('details');
+                      }
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem',
+                      padding: '1rem 1.25rem',
+                      background: 'rgba(124,58,237,0.04)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-base)',
+                      cursor: c.status === 'refuse' ? 'default' : 'pointer',
+                      transition: 'background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out)',
+                    }}
+                    onMouseEnter={e => {
+                      if (c.status !== 'refuse') {
+                        e.currentTarget.style.background = 'rgba(124,58,237,0.08)';
+                        e.currentTarget.style.borderColor = 'var(--border-base)';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'rgba(124,58,237,0.04)';
+                      e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <h4 style={{
+                        fontFamily: 'var(--font-cinzel), serif',
+                        fontSize: '1rem', fontWeight: 700,
+                        color: 'var(--text-primary)',
+                        marginBottom: '0.2rem',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
+                        {c.rpName}
+                      </h4>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        Soumis le {new Date(c.submittedAt || c.updatedAt).toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+                      {c.status === 'refuse' && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleEditApplication(c); }}
+                          style={{
+                            padding: '0.35rem 0.875rem', minHeight: 32,
+                            background: 'rgba(239,68,68,0.12)',
+                            border: '1px solid rgba(239,68,68,0.3)',
+                            borderRadius: 'var(--radius-sm)',
+                            color: '#F87171',
+                            fontSize: '0.75rem', fontWeight: 700,
+                            cursor: 'pointer',
+                            transition: 'background var(--duration-fast) var(--ease-out)',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.12)'; }}
+                        >
+                          Corriger
+                        </button>
+                      )}
+                      <StatusBadge status={c.status} />
                     </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
         </div>
       )}
 
+      {/* ─── DETAILS VIEW ─── */}
       {view === 'details' && selectedCandid && (
-        <div className="w-full">
-          <div className="flex justify-between items-center mb-10 pb-6 border-b border-white/10">
-              <button onClick={() => setView('history')} className="text-[12px] font-black text-neutral-400 hover:text-white uppercase tracking-[0.4em] transition-colors">← Revenir aux Archives</button>
-              <div className={`px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest
-                  ${selectedCandid.status === 'en_attente' ? 'border-amber-500/30 text-amber-500 bg-amber-500/5' : 
-                    selectedCandid.status === 'accepte' ? 'border-green-500/30 text-green-500 bg-green-500/5' : 
-                    'border-red-500/30 text-red-500 bg-red-500/5'}`}>
-                  {selectedCandid.status === 'en_attente' ? 'Étude en cours' : 
-                  selectedCandid.status === 'accepte' ? 'Candidature Acceptée' : 'Récit Écarté'}
-              </div>
+        <div>
+          {/* Header row */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem',
+            marginBottom: '1.75rem', paddingBottom: '1.25rem',
+            borderBottom: '1px solid var(--border-subtle)',
+          }}>
+            <button
+              onClick={() => setView('history')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                background: 'none', border: 'none',
+                color: 'var(--text-muted)', fontSize: '0.82rem',
+                cursor: 'pointer',
+                transition: 'color var(--duration-fast) var(--ease-out)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; }}
+            >
+              <ChevronLeft size={14} strokeWidth={2} />
+              Revenir aux Archives
+            </button>
+            <StatusBadge status={selectedCandid.status} />
           </div>
 
+          {/* Refusal reason */}
           {selectedCandid.status === 'refuse' && selectedCandid.refusalReason && (
-            <div className="mb-8 p-8 bg-red-500/10 border border-red-500/20 rounded-[2.5rem]">
-              <span className="block text-[10px] text-red-500 font-black uppercase tracking-widest mb-3">Motif du rejet :</span>
-              <p className="text-sm text-neutral-200 italic leading-relaxed">"{selectedCandid.refusalReason}"</p>
+            <div style={{
+              display: 'flex', gap: '0.75rem',
+              padding: '1rem 1.25rem',
+              background: 'rgba(239,68,68,0.06)',
+              border: '1px solid rgba(239,68,68,0.25)',
+              borderRadius: 'var(--radius-base)',
+              marginBottom: '1.5rem',
+            }}>
+              <AlertTriangle size={16} strokeWidth={1.5} style={{ color: '#F87171', flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#F87171', marginBottom: '0.3rem' }}>
+                  Motif du rejet
+                </span>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: 1.6 }}>
+                  "{selectedCandid.refusalReason}"
+                </p>
+              </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-            <div className="lg:col-span-8 bg-black/40 border border-white/10 p-10 rounded-[2.5rem] shadow-inner">
-                 <div className="mb-10 pb-8 border-b border-white/10">
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-400">Identité RP</span>
-                    <h2 className="text-5xl font-black text-white uppercase italic tracking-tighter mt-1">{selectedCandid.rpName}</h2>
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      <span className="px-3 py-1 bg-[#683892]/20 border border-[#683892]/40 rounded-lg text-sm font-black text-[#CBDBFC] uppercase">{selectedCandid.age} ans</span>
-                      <span className="px-3 py-1 bg-[#683892]/20 border border-[#683892]/40 rounded-lg text-sm font-black text-[#CBDBFC] uppercase">Race : {selectedCandid.race || 'Non spécifiée'}</span>
-                      <span className="px-3 py-1 bg-[#683892]/20 border border-[#683892]/40 rounded-lg text-sm font-black text-[#CBDBFC] uppercase">Taille : {selectedCandid.taille || 'Non spécifiée'}</span>
-                    </div>
-                 </div>
-                 
-                 <div className="space-y-12 mb-12">
-                    <div className="space-y-3">
-                       <span className="text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">Description Physique</span>
-                       <p className="text-sm text-[#CBDBFC]/90 leading-relaxed italic border-l border-[#683892]/30 pl-4">{selectedCandid.physique}</p>
-                    </div>
-                    <div className="space-y-3">
-                       <span className="text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">Description Mentale</span>
-                       <p className="text-sm text-[#CBDBFC]/90 leading-relaxed italic border-l border-[#683892]/30 pl-4">{selectedCandid.mental}</p>
-                    </div>
-                 </div>
+          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            {/* Main content */}
+            <div style={{
+              flex: '1 1 400px',
+              background: 'rgba(0,0,0,0.3)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '2rem',
+            }}>
+              <div style={{ marginBottom: '1.5rem', paddingBottom: '1.25rem', borderBottom: '1px solid var(--border-subtle)' }}>
+                <span style={labelStyle}>Identité RP</span>
+                <h2 style={{
+                  fontFamily: 'var(--font-cinzel), serif',
+                  fontSize: 'clamp(1.5rem,3vw,2.25rem)',
+                  fontWeight: 900,
+                  color: 'var(--text-primary)',
+                  marginBottom: '0.75rem',
+                }}>
+                  {selectedCandid.rpName}
+                </h2>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {[
+                    `${selectedCandid.age} ans`,
+                    `Race : ${selectedCandid.race || 'Non spécifiée'}`,
+                    `Taille : ${selectedCandid.taille || 'Non spécifiée'}`,
+                  ].map(label => (
+                    <span key={label} style={{
+                      padding: '0.2rem 0.75rem',
+                      background: 'rgba(124,58,237,0.12)',
+                      border: '1px solid rgba(124,58,237,0.25)',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: '0.8rem', fontWeight: 700,
+                      color: 'var(--text-primary)',
+                    }}>
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
 
-                 <div className="mb-6 opacity-30 text-[10px] font-black uppercase tracking-[0.4em] text-white">Récit & Lore</div>
-                 <div className="max-h-[600px] overflow-y-auto custom-scrollbar pr-4">
-                    <EditorContent editor={editor} className="tiptap-editor-readonly pointer-events-none" />
-                 </div>
+              {[
+                { label: 'Description Physique', value: selectedCandid.physique },
+                { label: 'Description Mentale', value: selectedCandid.mental },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ marginBottom: '1.5rem' }}>
+                  <span style={labelStyle}>{label}</span>
+                  <p style={{
+                    fontSize: '0.9rem', color: 'var(--text-secondary)',
+                    lineHeight: 1.7, fontStyle: 'italic',
+                    borderLeft: '2px solid rgba(124,58,237,0.3)',
+                    paddingLeft: '0.875rem',
+                  }}>
+                    {value}
+                  </p>
+                </div>
+              ))}
+
+              <div>
+                <span style={{ ...labelStyle, marginBottom: '0.75rem' }}>Récit & Lore</span>
+                <div style={{ maxHeight: 600, overflowY: 'auto' }}>
+                  <EditorContent editor={editor} className="tiptap-editor pointer-events-none" />
+                </div>
+              </div>
             </div>
 
-            <div className="lg:col-span-4 flex flex-col items-center gap-6 sticky top-10">
-               <div className="flex flex-col items-center gap-4 max-h-[600px] overflow-y-auto custom-scrollbar p-2">
-                  <span className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em]">Skin(s) 3D</span>
-                  {(selectedCandid.skinUrls?.length ? selectedCandid.skinUrls : (selectedCandid.skinUrl ? [selectedCandid.skinUrl] : [])).map((url: string, i: number) => (
-                    <div key={i} className="flex flex-col items-center gap-2 mb-4">
-                      <SkinViewer3D skinUrl={url} width={200} height={280} />
-                      <SkinDimensions url={url} />
-                    </div>
-                  ))}
-                  
-                  <div className="mt-4 px-6 py-3 bg-white/5 border border-white/20 rounded-2xl text-center w-full">
-                     <span className="block text-[8px] text-neutral-400 uppercase font-black tracking-widest mb-1">Pseudo Minecraft</span>
-                     <span className="text-sm font-bold text-[#CBDBFC] tracking-tight">{selectedCandid.mcPseudo || "Inconnu"}</span>
+            {/* Skin panel */}
+            <div style={{
+              flex: '0 0 220px',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem',
+              position: 'sticky', top: 80,
+            }}>
+              <span style={labelStyle}>Skin(s) 3D</span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', maxHeight: 600, overflowY: 'auto', paddingRight: 4 }}>
+                {(selectedCandid.skinUrls?.length ? selectedCandid.skinUrls : (selectedCandid.skinUrl ? [selectedCandid.skinUrl] : [])).map((url: string, i: number) => (
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                    <SkinViewer3D skinUrl={url} width={200} height={280} />
+                    <SkinDimensions url={url} />
                   </div>
-               </div>
-               {selectedCandid.status === 'refuse' && (
-                  <button onClick={() => handleEditApplication(selectedCandid)} className="w-full py-6 bg-white text-black font-black uppercase text-xs tracking-[0.4em] rounded-[2rem] hover:bg-[#CBDBFC] transition-all transform hover:scale-105 active:scale-95 shadow-xl">
-                     Réécrire le Récit
-                  </button>
-               )}
+                ))}
+              </div>
+              <div style={{
+                padding: '0.625rem 1rem',
+                background: 'rgba(0,0,0,0.3)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-base)',
+                textAlign: 'center', width: '100%',
+              }}>
+                <span style={{ display: 'block', ...labelStyle, marginBottom: '0.2rem' }}>Pseudo Minecraft</span>
+                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+                  {selectedCandid.mcPseudo || 'Inconnu'}
+                </span>
+              </div>
+              {selectedCandid.status === 'refuse' && (
+                <button
+                  onClick={() => handleEditApplication(selectedCandid)}
+                  style={{
+                    width: '100%', minHeight: 44,
+                    padding: '0.75rem',
+                    background: 'linear-gradient(135deg, var(--brand-primary), #5B21B6)',
+                    border: '1px solid rgba(124,58,237,0.4)',
+                    borderRadius: 'var(--radius-base)',
+                    color: '#fff', fontWeight: 700, fontSize: '0.875rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Réécrire le Récit
+                </button>
+              )}
             </div>
           </div>
         </div>
       )}
 
+      {/* ─── FORM VIEW ─── */}
       {view === 'form' && (
-        <div className="w-full">
-          <div className="flex justify-between items-center px-2 mb-10">
-            <button onClick={() => setView('history')} className="text-[12px] font-black text-neutral-400 hover:text-white uppercase tracking-[0.4em] transition-colors">← Abandonner</button>
-            <div className="flex items-center gap-3">
-              <div className={`h-1.5 w-1.5 rounded-full ${saveStatus === 'saving' ? 'bg-amber-500 animate-pulse' : saveStatus === 'saved' ? 'bg-green-500' : 'bg-neutral-600'}`} />
-              <span className="text-[9px] font-black uppercase text-neutral-400">{saveStatus === 'saving' ? 'Sauvegarde...' : saveStatus === 'saved' ? 'Brouillon à jour' : 'Prêt'}</span>
+        <div>
+          {/* Form header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: '2rem', flexWrap: 'wrap', gap: '0.75rem',
+          }}>
+            <button
+              onClick={() => setView('history')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                background: 'none', border: 'none',
+                color: 'var(--text-muted)', fontSize: '0.82rem',
+                cursor: 'pointer',
+                transition: 'color var(--duration-fast) var(--ease-out)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; }}
+            >
+              <ChevronLeft size={14} strokeWidth={2} />
+              Abandonner
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: saveStatus === 'saving' ? 'var(--brand-gold)' : saveStatus === 'saved' ? '#22C55E' : 'var(--border-base)',
+              }} />
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.06em' }}>
+                {saveStatus === 'saving' ? 'Sauvegarde...' : saveStatus === 'saved' ? 'Brouillon à jour' : 'Prêt'}
+              </span>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-12 font-sans">
-            {editingId && currentRefusalReason && (
-              <div className="bg-amber-500/10 border border-amber-500/40 p-10 rounded-[3rem] relative shadow-2xl">
-                <div className="flex items-center gap-4 mb-4">
-                  <span className="text-2xl">📝</span>
-                  <span className="text-[11px] text-amber-500 font-black uppercase tracking-[0.3em]">Raison du refus :</span>
+          {/* Refusal context */}
+          {editingId && currentRefusalReason && (
+            <div style={{
+              display: 'flex', gap: '0.75rem',
+              padding: '1rem 1.25rem',
+              background: 'rgba(201,168,76,0.06)',
+              border: '1px solid rgba(201,168,76,0.25)',
+              borderRadius: 'var(--radius-base)',
+              marginBottom: '2rem',
+            }}>
+              <AlertTriangle size={16} strokeWidth={1.5} style={{ color: 'var(--brand-gold)', flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--brand-gold)', marginBottom: '0.3rem' }}>
+                  Raison du refus
+                </span>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: 1.6 }}>
+                  "{currentRefusalReason}"
+                </p>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+
+            {/* Identity fields */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+              {([
+                { name: 'rpName', label: 'Nom RP', type: 'text', placeholder: 'Jean Dupont' },
+                { name: 'age', label: 'Âge (18+)', type: 'text', placeholder: '24' },
+                { name: 'taille', label: 'Taille (cm)', type: 'text', placeholder: '180' },
+              ] as const).map(({ name, label, type, placeholder }) => (
+                <div key={name}>
+                  <label style={labelStyle}>{label}</label>
+                  <input
+                    name={name}
+                    type={type}
+                    value={formData[name]}
+                    onChange={handleInputChange}
+                    required
+                    autoComplete="off"
+                    placeholder={placeholder}
+                    style={inputBase}
+                    onFocus={onFocusInput}
+                    onBlur={onBlurInput}
+                  />
                 </div>
-                <p className="text-lg text-neutral-200 font-medium italic leading-relaxed">"{currentRefusalReason}"</p>
-              </div>
-            )}
-            
-            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="space-y-2 lg:col-span-1">
-                <label className="block text-center text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-3">Nom RP</label>
-                <input name="rpName" value={formData.rpName} onChange={handleInputChange} required autoComplete="off" placeholder="Jean Dupont" className="w-full p-4 rounded-2xl text-white outline-none transition-all text-sm" />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-center text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-3">Âge (18+)</label>
-                <input name="age" type="text" value={formData.age} onChange={handleInputChange} required autoComplete="off" placeholder="24" className="w-full p-4 rounded-2xl text-white outline-none transition-all text-sm" />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-center text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-3">Taille (cm)</label>
-                <input name="taille" type="text" value={formData.taille} onChange={handleInputChange} required autoComplete="off" placeholder="180" className="w-full p-4 rounded-2xl text-white outline-none transition-all text-sm" />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-center text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-3">Race</label>
-                <select name="race" value={formData.race} onChange={handleInputChange} required className="w-full p-4 rounded-2xl text-white cursor-pointer outline-none">
+              ))}
+              <div>
+                <label style={labelStyle}>Race</label>
+                <select
+                  name="race"
+                  value={formData.race}
+                  onChange={handleInputChange}
+                  required
+                  style={{ ...inputBase, cursor: 'pointer' }}
+                  onFocus={onFocusInput}
+                  onBlur={onBlurInput}
+                >
                   <option value="Humain">Humain</option>
                   <option value="Elfe">Elfe</option>
                   <option value="Nain">Nain</option>
                   <option value="Autre">Autre</option>
                 </select>
                 {formData.race === 'Autre' && (
-                  <p className="text-[9px] text-center text-amber-500 font-black uppercase tracking-widest mt-2 animate-pulse">⚠️ Nécessite un ticket</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.5rem' }}>
+                    <AlertTriangle size={12} strokeWidth={2} style={{ color: 'var(--brand-gold)' }} />
+                    <span style={{ fontSize: '0.75rem', color: 'var(--brand-gold)', fontWeight: 600 }}>
+                      Nécessite un ticket
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
 
-            <div className="space-y-12">
-              <div className="space-y-2">
-                <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em] mb-4">Description Physique (Minimum 5 lignes)</label>
-                <textarea 
-                  ref={physiqueRef}
-                  name="physique" 
-                  value={formData.physique} 
-                  onChange={handleInputChange} 
-                  placeholder="Apparence, style vestimentaire, signes distinctifs..." 
-                  className="w-full min-h-[128px] p-6 rounded-[1.5rem] text-white outline-none transition-all resize-none custom-scrollbar overflow-hidden" 
+            {/* Text descriptions */}
+            {([
+              { name: 'physique', ref: physiqueRef, label: 'Description Physique', placeholder: 'Apparence, style vestimentaire, signes distinctifs...' },
+              { name: 'mental', ref: mentalRef, label: 'Description Mentale', placeholder: 'Caractère, tempérament, psychologie, peurs...' },
+            ] as const).map(({ name, ref, label, placeholder }) => (
+              <div key={name}>
+                <label style={labelStyle}>{label} <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(minimum 5 lignes)</span></label>
+                <textarea
+                  ref={ref}
+                  name={name}
+                  value={formData[name]}
+                  onChange={handleInputChange}
+                  placeholder={placeholder}
+                  style={{
+                    ...inputBase,
+                    minHeight: 128,
+                    resize: 'none',
+                    overflow: 'hidden',
+                    lineHeight: 1.6,
+                  }}
+                  onFocus={onFocusInput}
+                  onBlur={onBlurInput}
                 />
               </div>
-              
-              <div className="space-y-2">
-                <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em] mb-4">Description Mentale (Minimum 5 lignes)</label>
-                <textarea 
-                  ref={mentalRef}
-                  name="mental" 
-                  value={formData.mental} 
-                  onChange={handleInputChange} 
-                  placeholder="Caractère, tempérament, psychologie, peurs..." 
-                  className="w-full min-h-[128px] p-6 rounded-[1.5rem] text-white outline-none transition-all resize-none custom-scrollbar overflow-hidden" 
-                />
-              </div>
-            </div>
+            ))}
 
-            <div className="space-y-4">
-              <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em]">Récit & Lore (Minimum 25 lignes)</label>
-              <div className="group relative h-[600px] flex flex-col border border-white/20 rounded-[2.5rem] bg-white/[0.05] focus-within:border-[#683892] focus-within:bg-black/40 transition-all overflow-hidden shadow-2xl">
+            {/* Lore editor */}
+            <div>
+              <label style={labelStyle}>
+                Récit & Lore{' '}
+                <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
+                  (minimum 25 lignes)
+                </span>
+              </label>
+              <div style={{
+                height: 600,
+                display: 'flex', flexDirection: 'column',
+                border: '1px solid var(--border-base)',
+                borderRadius: 'var(--radius-base)',
+                background: 'rgba(0,0,0,0.25)',
+                overflow: 'hidden',
+                transition: 'border-color var(--duration-fast) var(--ease-out)',
+              }}
+                onFocusCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--brand-primary)'; }}
+                onBlurCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border-base)'; }}
+              >
                 <MenuBar editor={editor} />
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div style={{ flex: 1, overflowY: 'auto' }}>
                   <EditorContent editor={editor} />
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 bg-white/[0.05] p-10 rounded-[3rem] border border-white/20 items-center">
-              <div className="space-y-8">
-                <div className="space-y-4">
-                   <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em]">Pseudo Minecraft <span className="text-red-500">*</span></label>
-                   <input name="mcPseudo" value={formData.mcPseudo} onChange={handleInputChange} required autoComplete="off" placeholder="Ex: Steve_64" className="w-full p-6 rounded-2xl text-white outline-none transition-all" />
+            {/* Minecraft + Skin */}
+            <div style={{
+              display: 'flex', gap: '2rem', flexWrap: 'wrap',
+              padding: '1.5rem',
+              background: 'rgba(0,0,0,0.2)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-lg)',
+            }}>
+              {/* Left: inputs */}
+              <div style={{ flex: '1 1 260px', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div>
+                  <label style={labelStyle}>
+                    Pseudo Minecraft <span style={{ color: '#F87171' }}>*</span>
+                  </label>
+                  <input
+                    name="mcPseudo"
+                    value={formData.mcPseudo}
+                    onChange={handleInputChange}
+                    required
+                    autoComplete="off"
+                    placeholder="Ex: Steve_64"
+                    style={inputBase}
+                    onFocus={onFocusInput}
+                    onBlur={onBlurInput}
+                  />
                 </div>
-                <div className="space-y-4">
-                  <label className="block text-xs font-black text-neutral-400 uppercase tracking-[0.2em]">Fichiers Apparence (.png - Max 8 skins) <span className="text-red-500">*</span></label>
-                  <div className="relative group">
-                    <input type="file" multiple accept="image/png" onChange={handleFileChange} className="hidden" id="skin-upload" />
-                    <label htmlFor="skin-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/20 rounded-[2rem] cursor-pointer hover:border-[#683892] hover:bg-[#683892]/10 transition-all text-center bg-black/40">
-                      {isUploading ? <span className="animate-pulse text-[10px] font-black uppercase text-[#CBDBFC]">Analyse et Upload...</span> : <><span className="text-3xl mb-3">👔</span><span className="text-[10px] font-black uppercase text-neutral-400 group-hover:text-white transition-colors">Charger mes Skins</span></>}
-                    </label>
-                  </div>
+                <div>
+                  <label style={labelStyle}>
+                    Apparence (.png — max 8 skins) <span style={{ color: '#F87171' }}>*</span>
+                  </label>
+                  <input type="file" multiple accept="image/png" onChange={handleFileChange} style={{ display: 'none' }} id="skin-upload" />
+                  <label
+                    htmlFor="skin-upload"
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                      width: '100%', minHeight: 120,
+                      border: '2px dashed var(--border-base)',
+                      borderRadius: 'var(--radius-base)',
+                      background: 'rgba(0,0,0,0.2)',
+                      cursor: 'pointer',
+                      transition: 'border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out)',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = 'var(--brand-primary)';
+                      e.currentTarget.style.background = 'rgba(124,58,237,0.06)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = 'var(--border-base)';
+                      e.currentTarget.style.background = 'rgba(0,0,0,0.2)';
+                    }}
+                  >
+                    {isUploading ? (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--brand-primary)', fontWeight: 600, letterSpacing: '0.06em' }}>
+                        Upload en cours...
+                      </span>
+                    ) : (
+                      <>
+                        <Upload size={20} strokeWidth={1.5} style={{ color: 'var(--text-muted)' }} />
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                          Charger mes Skins
+                        </span>
+                      </>
+                    )}
+                  </label>
                   {isHighResSkin && (
-                    <p className="text-[9px] text-center text-amber-500 font-black uppercase tracking-widest mt-2 animate-pulse">⚠️ Nécessite un ticket</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.5rem' }}>
+                      <AlertTriangle size={12} strokeWidth={2} style={{ color: 'var(--brand-gold)' }} />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--brand-gold)', fontWeight: 600 }}>
+                        Skin HD détecté — nécessite un ticket
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
-              <div className="flex flex-col items-center gap-4 max-h-[400px] overflow-y-auto custom-scrollbar">
-                <span className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.4em]">Aperçu 3D</span>
-                <div className="flex flex-wrap justify-center gap-4">
-                  {(formData.skinUrls?.length ? formData.skinUrls : (formData.skinUrl ? [formData.skinUrl] : [])).map((url, i) => (
-                    <div key={i} className="flex flex-col items-center gap-2 relative">
-                      <button type="button" onClick={() => removeSkin(i)} className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-red-500 text-white font-black z-10 flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20">✕</button>
+
+              {/* Right: 3D preview */}
+              <div style={{
+                flex: '1 1 200px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem',
+                maxHeight: 400, overflowY: 'auto',
+              }}>
+                <span style={labelStyle}>Aperçu 3D</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.75rem' }}>
+                  {currentSkins.map((url, i) => (
+                    <div key={i} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => removeSkin(i)}
+                        style={{
+                          position: 'absolute', top: -8, right: -8, zIndex: 10,
+                          width: 24, height: 24,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: '#EF4444', border: 'none',
+                          borderRadius: '50%',
+                          color: '#fff', cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(239,68,68,0.4)',
+                        }}
+                      >
+                        <X size={12} strokeWidth={2.5} />
+                      </button>
                       <SkinViewer3D skinUrl={url} width={150} height={200} />
                       <SkinDimensions url={url} />
                     </div>
@@ -727,9 +1099,31 @@ export default function CandidatureForm() {
               </div>
             </div>
 
-            <div className="pt-8 flex justify-center">
-              <button type="submit" disabled={loading || isUploading} className="group relative w-full max-w-2xl py-8 rounded-[3rem] overflow-hidden transition-all duration-500 hover:scale-[1.02] shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#683892] to-[#321B46]" /><span className="relative z-10 text-white font-black uppercase text-sm tracking-[0.5em]">{editingId ? "Actualiser le Parchemin" : "Sceller le Parchemin"}</span>
+            {/* Submit */}
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '0.5rem' }}>
+              <button
+                type="submit"
+                disabled={loading || isUploading}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.625rem',
+                  padding: '1rem 3rem', minHeight: 52,
+                  width: '100%', maxWidth: 480,
+                  justifyContent: 'center',
+                  background: 'linear-gradient(135deg, var(--brand-primary), #5B21B6)',
+                  border: '1px solid rgba(124,58,237,0.4)',
+                  borderRadius: 'var(--radius-lg)',
+                  color: '#fff',
+                  fontFamily: 'var(--font-cinzel), serif',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  letterSpacing: '0.08em',
+                  cursor: loading || isUploading ? 'not-allowed' : 'pointer',
+                  opacity: loading || isUploading ? 0.7 : 1,
+                  transition: 'opacity var(--duration-fast) var(--ease-out)',
+                }}
+              >
+                <Scroll size={16} strokeWidth={1.5} />
+                {editingId ? 'Actualiser le Parchemin' : 'Sceller le Parchemin'}
               </button>
             </div>
           </form>

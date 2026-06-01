@@ -1,93 +1,67 @@
 'use client';
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { BookOpen, FolderOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import type { WikiTreeNode } from '@/lib/wiki-db';
 
-const COLORS = { 
-  purple: '#683892', 
-  lightText: '#CBDBFC', 
-  cardBorder: 'rgba(104, 56, 146, 0.3)', 
-  almostBlack: '#0A0612' 
-};
-
-// Composant récursif pour chaque élément (Dossier ou Article)
-const NavNode = ({ node, depth = 0, isCollapsed }: { node: any, depth?: number, isCollapsed: boolean }) => {
+const NavNode: React.FC<{ node: WikiTreeNode; depth?: number; collapsed: boolean }> = ({
+  node, depth = 0, collapsed,
+}) => {
   const pathname = usePathname();
-  
-  // RÉPARATION : On décode l'URL (ex: %20 devient un espace) pour comparer avec node.path
-  const decodedPathname = decodeURIComponent(pathname);
-  const isActive = decodedPathname === `/wiki/${node.path}`;
-  const isParentActive = decodedPathname.startsWith(`/wiki/${node.path}`);
-  
-  const [isHovered, setIsHovered] = useState(false);
+  const decoded  = decodeURIComponent(pathname);
+  const isActive = decoded === `/wiki/${node.slug}`;
+  const isParent = decoded.startsWith(`/wiki/${node.slug}/`);
+  const isFolder = node.type === 'folder';
+  const indent   = collapsed ? 0 : depth * 12;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <Link 
-        // RÉPARATION : On encode l'URL pour que le navigateur gère bien les espaces au clic
-        href={`/wiki/${encodeURI(node.path)}`}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+    <div>
+      <Link
+        href={`/wiki/${encodeURI(node.slug)}`}
+        title={collapsed ? node.title : undefined}
         style={{
-          padding: '0.5rem 1rem',
-          paddingLeft: isCollapsed ? '1rem' : `${(depth * 1.2) + 1}rem`,
-          fontSize: depth === 0 ? '0.85rem' : '0.8rem',
+          display: 'flex', alignItems: 'center',
+          gap: collapsed ? 0 : '0.5rem',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          padding: collapsed ? '0.55rem 0' : `0.4rem 0.75rem 0.4rem ${indent + 12}px`,
+          borderRadius: 'var(--radius-sm)',
           textDecoration: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.7rem',
-          color: (isActive || isHovered) ? COLORS.lightText : 'rgba(203, 219, 252, 0.5)',
-          transition: 'all 0.3s ease',
-          position: 'relative',
-          justifyContent: isCollapsed ? 'center' : 'flex-start'
+          color: isActive ? 'var(--brand-primary)' : (isParent ? 'var(--text-primary)' : 'var(--text-secondary)'),
+          background: isActive ? 'rgba(109,40,217,0.08)' : 'transparent',
+          fontWeight: isActive || depth === 0 ? 600 : 400,
+          fontSize: depth === 0 ? '0.82rem' : '0.875rem',
+          letterSpacing: depth === 0 ? '0.04em' : '0.01em',
+          borderLeft: isActive && !collapsed ? '2px solid var(--brand-primary)' : '2px solid transparent',
+          transition: 'background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out)',
+          minHeight: 36,
         }}
+        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
+        onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
       >
-        <span style={{ 
-          fontSize: '1.1rem', 
-          filter: (isActive || isHovered) ? 'none' : 'grayscale(100%) opacity(0.4)',
-          transition: 'all 0.8s ease'
-        }}>
+        <span style={{ flexShrink: 0, fontSize: '1rem', lineHeight: 1, display: 'flex', alignItems: 'center' }}>
           {node.icon}
         </span>
-        
-        {!isCollapsed && (
-          <span style={{ 
-            whiteSpace: 'nowrap', 
-            overflow: 'hidden', 
-            textOverflow: 'ellipsis',
-            fontWeight: (depth === 0 || isActive) ? '800' : '400',
-            textTransform: depth === 0 ? 'uppercase' : 'none',
-            letterSpacing: depth === 0 ? '0.1em' : 'normal'
-          }}>
+
+        {!collapsed && (
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {node.title}
           </span>
         )}
-        
-        {!isCollapsed && (
-          <span style={{
-            position: 'absolute',
-            bottom: '2px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: (isActive || isHovered || (depth === 0 && isParentActive)) ? '60%' : '0%',
-            opacity: (isActive || isHovered || (depth === 0 && isParentActive)) ? 1 : 0,
-            height: '2px',
-            background: `linear-gradient(to right, transparent, ${COLORS.purple}, transparent)`,
-            transition: 'width 0.8s ease, opacity 0.8s ease',
-            pointerEvents: 'none'
-          }} />
+
+        {!collapsed && isFolder && (isParent || isActive) && (
+          <FolderOpen size={12} strokeWidth={1.5} style={{ flexShrink: 0, color: 'var(--brand-gold)' }} />
         )}
       </Link>
 
-      {!isCollapsed && node.children && node.children.length > 0 && (
-        <div style={{ 
-          borderLeft: '1px solid rgba(104, 56, 146, 0.44)', 
-          marginLeft: `${(depth * 1.2) + 1.5}rem`,
-          marginTop: '0.2rem',
-          marginBottom: '0.5rem'
+      {!collapsed && node.children && node.children.length > 0 && (
+        <div style={{
+          borderLeft: '1px solid var(--border-subtle)',
+          marginLeft: `${indent + 20}px`,
         }}>
-          {node.children.map((child: any) => (
-            <NavNode key={child.path} node={child} depth={depth + 1} isCollapsed={isCollapsed} />
+          {node.children.map((child) => (
+            <NavNode key={child.slug} node={child} depth={depth + 1} collapsed={collapsed} />
           ))}
         </div>
       )}
@@ -95,88 +69,98 @@ const NavNode = ({ node, depth = 0, isCollapsed }: { node: any, depth?: number, 
   );
 };
 
-export default function WikiSidebar({ tree = [] }: { tree: any[] }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  const [isTitleHovered, setIsTitleHovered] = useState(false);
+const WikiSidebar: React.FC<{ tree: WikiTreeNode[] }> = ({ tree }) => {
+  const [collapsed, setCollapsed] = useState(false);
+  const [mounted,   setMounted]   = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
-    // Gestion auto du responsive
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      setIsCollapsed(true);
-    }
+    setMounted(true);
+    if (window.innerWidth < 1024) setCollapsed(true);
   }, []);
 
-  if (!isMounted) return null;
+  if (!mounted) return null;
 
   return (
-    <aside style={{
-      width: isCollapsed ? '80px' : '300px',
-      flexShrink: 0,
-      position: 'sticky',
-      top: 0,
-      height: '100vh',
-      backgroundColor: COLORS.almostBlack,
-      borderRight: `1px solid ${COLORS.cardBorder}`,
-      padding: isCollapsed ? '2rem 0.5rem' : '2.5rem 1rem',
-      transition: 'width 0.4s ease',
-      zIndex: 20
-    }}>
-      <button 
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        style={{
-          position: 'fixed',
-          left: isCollapsed ? '64px' : '284px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          background: COLORS.almostBlack,
-          border: `1px solid ${COLORS.cardBorder}`,
-          color: COLORS.lightText,
-          borderRadius: '50%',
-          width: '30px',
-          height: '30px',
-          cursor: 'pointer',
-          zIndex: 100,
-          transition: 'all 0.4s ease',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        {isCollapsed ? '›' : '‹'}
-      </button>
-
-      <div style={{ marginBottom: '2.5rem', textAlign: isCollapsed ? 'center' : 'left' }}>
-        <Link 
-          href="/wiki" 
-          onMouseEnter={() => setIsTitleHovered(true)} 
-          onMouseLeave={() => setIsTitleHovered(false)}
-          style={{ 
-            fontSize: '0.7rem', 
-            fontWeight: '900', 
-            letterSpacing: '0.2em', 
-            textTransform: 'uppercase', 
+    <aside
+      aria-label="Navigation du wiki"
+      style={{
+        width: collapsed ? 52 : 256,
+        flexShrink: 0,
+        position: 'sticky',
+        top: 64,
+        height: 'calc(100dvh - 64px)',
+        background: 'var(--surface-raised)',
+        borderRight: '1px solid var(--border-subtle)',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: `width var(--duration-slow) var(--ease-in-out)`,
+        overflow: 'hidden',
+        zIndex: 'var(--z-raised)' as any,
+      }}
+    >
+      {/* Header */}
+      <div style={{
+        padding: '0.875rem 0.75rem',
+        borderBottom: '1px solid var(--border-subtle)',
+        display: 'flex', alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'space-between',
+        flexShrink: 0,
+      }}>
+        {!collapsed && (
+          <Link href="/wiki" style={{
             textDecoration: 'none',
-            color: isTitleHovered ? COLORS.lightText : 'rgba(203, 219, 252, 0.3)', 
-            transition: 'color 0.8s ease'
+            fontSize: '0.72rem', fontWeight: 700,
+            letterSpacing: '0.12em', textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+            display: 'flex', alignItems: 'center', gap: '0.4rem',
+          }}>
+            <BookOpen size={13} strokeWidth={2} />
+            Wiki
+          </Link>
+        )}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? 'Développer' : 'Réduire'}
+          style={{
+            width: 28, height: 28,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'transparent',
+            border: '1px solid var(--border-base)',
+            borderRadius: 'var(--radius-sm)',
+            color: 'var(--text-muted)',
+            cursor: 'pointer',
+            flexShrink: 0,
+            transition: 'background var(--duration-fast) var(--ease-out)',
           }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
         >
-          {isCollapsed ? 'W' : 'Documentation / Wiki'}
-        </Link>
+          {collapsed
+            ? <ChevronRight size={13} strokeWidth={2} />
+            : <ChevronLeft  size={13} strokeWidth={2} />}
+        </button>
       </div>
 
-      <nav style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '0.2rem', 
-        overflowY: 'auto', 
-        maxHeight: 'calc(100vh - 150px)' 
-      }}>
-        {tree.map((node: any) => (
-          <NavNode key={node.path} node={node} isCollapsed={isCollapsed} />
+      {/* Nav tree */}
+      <nav
+        aria-label="Navigation du wiki"
+        style={{
+          flex: 1, overflowY: 'auto', overflowX: 'hidden',
+          padding: '0.5rem 0.4rem',
+          display: 'flex', flexDirection: 'column', gap: '0.05rem',
+        }}
+      >
+        {tree.length === 0 && !collapsed && (
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '0.5rem 0.75rem' }}>
+            Aucune page.
+          </p>
+        )}
+        {tree.map((node) => (
+          <NavNode key={node.slug} node={node} collapsed={collapsed} />
         ))}
       </nav>
     </aside>
   );
-}
+};
+
+export default WikiSidebar;
